@@ -99,7 +99,7 @@
     pwd.type = pwd.type === 'password' ? 'text' : 'password';
   }
 
-  function handleLogin(e) {
+  async function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
@@ -114,20 +114,25 @@
     pendingNotice.style.display = 'none';
     rejectedNotice.style.display = 'none';
 
+    // Force sync with cloud database first to get the absolute latest approvals
+    if (typeof syncWithRemote === 'function') {
+      await syncWithRemote();
+    }
+
     setTimeout(() => {
       // Check pending/rejected status first
       const db = getDB();
-      const pendingReg = db.pendingRegistrations && db.pendingRegistrations.find(r => r.email === email && r.status === 'pending');
-      const rejectedReg = db.pendingRegistrations && db.pendingRegistrations.find(r => r.email === email && r.status === 'rejected');
+      const pendingReg = db.pendingRegistrations && db.pendingRegistrations.find(r => r.email.toLowerCase() === email.toLowerCase() && r.status === 'pending');
+      const rejectedReg = db.pendingRegistrations && db.pendingRegistrations.find(r => r.email.toLowerCase() === email.toLowerCase() && r.status === 'rejected');
 
-      if (pendingReg && !db.users.find(u => u.email === email && u.role !== 'admin')) {
+      if (pendingReg && !db.users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.role !== 'admin')) {
         pendingNotice.style.display = 'block';
         btn.disabled = false;
         btn.innerHTML = '🚀 Sign In';
         return;
       }
 
-      if (rejectedReg && !db.users.find(u => u.email === email && u.role !== 'admin')) {
+      if (rejectedReg && !db.users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.role !== 'admin')) {
         rejectedNotice.style.display = 'block';
         btn.disabled = false;
         btn.innerHTML = '🚀 Sign In';
@@ -146,7 +151,7 @@
         btn.disabled = false;
         btn.innerHTML = '🚀 Sign In';
       }
-    }, 600);
+    }, 400);
   }
 </script>
 </body>
