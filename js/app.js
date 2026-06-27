@@ -59,7 +59,13 @@ const defaultDB = {
 
 // ---- DB Functions ----
 // Public Realtime Database REST URL (synced across all Vercel/phone sessions)
-const REMOTE_DB_URL = 'https://extendsclass.com/api/json-storage/bin/febfbaa';
+const isLocal = window.location.hostname === 'localhost' || 
+                window.location.hostname === '127.0.0.1' || 
+                window.location.hostname.includes('loca.lt');
+
+const REMOTE_DB_URL = isLocal 
+  ? 'https://shopchain-u.vercel.app/api/db' 
+  : '/api/db';
 
 // Floating Sync Status Indicator UI
 function createSyncIndicator() {
@@ -143,7 +149,7 @@ function mergeArrays(localArr, remoteArr) {
 async function syncWithRemote() {
   if (!REMOTE_DB_URL) return;
   try {
-    const res = await fetch(REMOTE_DB_URL + '?nocache=' + Date.now());
+    const res = await fetch(REMOTE_DB_URL);
     const remoteDB = await res.json();
     if (remoteDB && !remoteDB.error) {
       const local = JSON.parse(localStorage.getItem(DB_KEY)) || defaultDB;
@@ -165,7 +171,7 @@ async function syncWithRemote() {
       
       if (JSON.stringify(merged) !== JSON.stringify(remoteDB)) {
         await fetch(REMOTE_DB_URL, {
-          method: 'PUT',
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(merged)
         });
@@ -174,7 +180,7 @@ async function syncWithRemote() {
       // If remote DB is empty or has error, initialize it with local DB
       const local = JSON.parse(localStorage.getItem(DB_KEY)) || defaultDB;
       const initRes = await fetch(REMOTE_DB_URL, {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(local)
       });
@@ -262,7 +268,7 @@ function saveDB(db) {
   localStorage.setItem(DB_KEY, JSON.stringify(db));
   if (REMOTE_DB_URL) {
     fetch(REMOTE_DB_URL, {
-      method: 'PUT',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(db)
     }).catch(err => console.error(err));
