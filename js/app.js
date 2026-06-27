@@ -134,13 +134,16 @@ function mergeArrays(localArr, remoteArr) {
   if (!localArr) return remoteArr || [];
   if (!remoteArr) return localArr || [];
   const map = new Map();
-  remoteArr.forEach(item => map.set(item.id || item.code, item));
-  localArr.forEach(item => {
+  // Store local items first
+  localArr.forEach(item => map.set(item.id || item.code, item));
+  // Merge and overwrite with remote items (remote cloud state takes precedence)
+  remoteArr.forEach(item => {
     const key = item.id || item.code;
     if (!map.has(key)) {
       map.set(key, item);
     } else {
-      map.set(key, { ...map.get(key), ...item });
+      const localItem = map.get(key);
+      map.set(key, { ...localItem, ...item });
     }
   });
   return Array.from(map.values());
