@@ -121,6 +121,7 @@ function getCurrentUser() {
 }
 
 function login(email, password) {
+  email = email.toLowerCase().trim();
   const db = getDB();
   const user = db.users.find(u => u.email === email && u.password === password);
   if (!user) return { success: false, message: 'Invalid email or password!' };
@@ -183,6 +184,7 @@ function deactivateReferralCode(code) {
 
 // ---- Registration Request Functions ----
 function submitRegistration(name, email, password, referralCode) {
+  email = email.toLowerCase().trim();
   const db = getDB();
 
   // Check referral code
