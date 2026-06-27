@@ -59,7 +59,7 @@ const defaultDB = {
 
 // ---- DB Functions ----
 // Public Realtime Database REST URL (synced across all Vercel/phone sessions)
-const REMOTE_DB_URL = 'https://shopchain-default-default-rtdb.firebaseio.com/db.json';
+const REMOTE_DB_URL = 'https://extendsclass.com/api/json-storage/bin/fcabccd';
 
 function mergeArrays(localArr, remoteArr) {
   if (!localArr) return remoteArr || [];
@@ -80,9 +80,9 @@ function mergeArrays(localArr, remoteArr) {
 async function syncWithRemote() {
   if (!REMOTE_DB_URL) return;
   try {
-    const res = await fetch(REMOTE_DB_URL);
+    const res = await fetch(REMOTE_DB_URL + '?nocache=' + Date.now());
     const remoteDB = await res.json();
-    if (remoteDB) {
+    if (remoteDB && !remoteDB.error) {
       const local = JSON.parse(localStorage.getItem(DB_KEY)) || defaultDB;
       
       const merged = {
@@ -107,7 +107,7 @@ async function syncWithRemote() {
         });
       }
     } else {
-      // If remote DB is empty, initialize it with local DB
+      // If remote DB is empty or has error, initialize it with local DB
       const local = JSON.parse(localStorage.getItem(DB_KEY)) || defaultDB;
       await fetch(REMOTE_DB_URL, {
         method: 'PUT',
