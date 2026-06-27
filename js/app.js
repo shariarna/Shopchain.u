@@ -59,7 +59,70 @@ const defaultDB = {
 
 // ---- DB Functions ----
 // Public Realtime Database REST URL (synced across all Vercel/phone sessions)
-const REMOTE_DB_URL = 'https://extendsclass.com/api/json-storage/bin/fcabccd';
+const REMOTE_DB_URL = 'https://extendsclass.com/api/json-storage/bin/febfbaa';
+
+// Floating Sync Status Indicator UI
+function createSyncIndicator() {
+  if (document.getElementById('db-sync-indicator')) return;
+  const div = document.createElement('div');
+  div.id = 'db-sync-indicator';
+  div.style.position = 'fixed';
+  div.style.bottom = '15px';
+  div.style.right = '15px';
+  div.style.zIndex = '9999';
+  div.style.background = 'rgba(15, 23, 42, 0.85)';
+  div.style.backdropFilter = 'blur(10px)';
+  div.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+  div.style.padding = '6px 12px';
+  div.style.borderRadius = '20px';
+  div.style.fontFamily = 'system-ui, sans-serif';
+  div.style.fontSize = '11px';
+  div.style.color = '#e2e8f0';
+  div.style.display = 'flex';
+  div.style.alignItems = 'center';
+  div.style.gap = '8px';
+  div.style.pointerEvents = 'none';
+  div.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
+  div.style.transition = 'opacity 0.4s, transform 0.4s';
+  div.style.opacity = '0';
+  div.style.transform = 'translateY(10px)';
+  
+  div.innerHTML = `<span id="db-sync-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #94a3b8; display: inline-block; transition: background 0.3s;"></span> <span id="db-sync-text">Database connecting...</span>`;
+  document.body.appendChild(div);
+  
+  setTimeout(() => {
+    div.style.opacity = '1';
+    div.style.transform = 'translateY(0)';
+  }, 200);
+}
+
+function updateSyncStatus(status, message) {
+  const dot = document.getElementById('db-sync-dot');
+  const text = document.getElementById('db-sync-text');
+  const div = document.getElementById('db-sync-indicator');
+  if (!dot || !text || !div) return;
+  
+  if (status === 'success') {
+    dot.style.background = '#10b981'; // vibrant green
+    dot.style.boxShadow = '0 0 8px #10b981';
+    text.textContent = message || 'Cloud DB Active';
+    setTimeout(() => {
+      div.style.opacity = '0.4'; // semi-transparent when stable
+    }, 3000);
+  } else {
+    dot.style.background = '#ef4444'; // vibrant red
+    dot.style.boxShadow = '0 0 8px #ef4444';
+    text.textContent = message || 'Local Mode / Sync Error';
+    div.style.opacity = '1';
+  }
+}
+
+// Automatically create indicator on load
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', createSyncIndicator);
+} else {
+  createSyncIndicator();
+}
 
 function mergeArrays(localArr, remoteArr) {
   if (!localArr) return remoteArr || [];
@@ -98,6 +161,7 @@ async function syncWithRemote() {
       };
       
       localStorage.setItem(DB_KEY, JSON.stringify(merged));
+      updateSyncStatus('success', 'Cloud DB Connected');
       
       if (JSON.stringify(merged) !== JSON.stringify(remoteDB)) {
         await fetch(REMOTE_DB_URL, {
@@ -109,14 +173,20 @@ async function syncWithRemote() {
     } else {
       // If remote DB is empty or has error, initialize it with local DB
       const local = JSON.parse(localStorage.getItem(DB_KEY)) || defaultDB;
-      await fetch(REMOTE_DB_URL, {
+      const initRes = await fetch(REMOTE_DB_URL, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(local)
       });
+      if (initRes.ok) {
+        updateSyncStatus('success', 'Cloud DB Initialized');
+      } else {
+        updateSyncStatus('error', 'Init failed');
+      }
     }
   } catch (e) {
     console.error("Sync error:", e);
+    updateSyncStatus('error', 'Cloud Offline');
   }
 }
 
