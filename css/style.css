@@ -1257,12 +1257,22 @@ body.light-theme .form-control:focus {
 
 /* ============ MOBILE RESPONSIVE OPTIMIZATION ============ */
 @media (max-width: 768px) {
+  /* Layout Adjustments */
   .page-layout {
     grid-template-columns: 1fr;
-    padding: 12px 12px 90px 12px;
-    gap: 16px;
+    padding: 16px 12px 100px 12px;
+    gap: 20px;
   }
 
+  .page-header h1 {
+    font-size: 24px;
+  }
+
+  .page-header p {
+    font-size: 13px;
+  }
+
+  /* Fixed Bottom Bar Navigation (iOS style) */
   .sidebar {
     position: fixed;
     bottom: 0;
@@ -1270,14 +1280,16 @@ body.light-theme .form-control:focus {
     right: 0;
     top: auto;
     z-index: 2000;
-    height: 70px;
-    background: var(--bg-dark);
-    backdrop-filter: blur(28px) saturate(190%);
-    -webkit-backdrop-filter: blur(28px) saturate(190%);
+    height: 76px;
+    background: rgba(7, 9, 19, 0.75);
+    backdrop-filter: blur(30px) saturate(190%);
+    -webkit-backdrop-filter: blur(30px) saturate(190%);
     border-top: 1px solid var(--border);
     width: 100%;
     margin: 0;
-    box-shadow: 0 -8px 32px 0 rgba(0,0,0,0.25);
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom, 14px);
+    box-shadow: 0 -8px 30px rgba(0,0,0,0.4);
   }
 
   .sidebar-menu {
@@ -1286,17 +1298,20 @@ body.light-theme .form-control:focus {
     background: transparent;
     border: none;
     border-radius: 0;
+    height: 100%;
+    align-items: center;
   }
 
   .sidebar-item {
     flex-direction: column;
     gap: 4px;
-    padding: 8px 4px;
+    padding: 6px 2px;
     font-size: 10px;
     text-align: center;
     border-left: none;
     border-top: 3px solid transparent;
     flex: 1;
+    height: 100%;
     justify-content: center;
     color: var(--text-secondary);
   }
@@ -1311,102 +1326,194 @@ body.light-theme .form-control:focus {
     color: var(--primary);
     border-top-color: var(--primary);
     border-left-color: transparent;
+    font-weight: 700;
   }
 
   .sidebar-item .icon {
-    font-size: 20px;
+    font-size: 22px;
     margin: 0;
   }
 
-  /* Hide non-essential sidebar boxes on mobile to save space */
+  /* Hide sidebar decorative boxes */
   .sidebar .glass-card {
     display: none;
   }
 
-  /* Stats grid - 2 columns */
-  .stats-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-
-  .stat-card {
-    padding: 16px;
-  }
-
-  .stat-value {
-    font-size: 20px;
-  }
-
-  .stat-icon {
-    font-size: 24px;
-    top: 14px;
-    right: 14px;
-  }
-
-  /* Product grid - 2 columns */
+  /* Mobile-first Product Grid (2 Columns) */
   .product-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 12px;
   }
 
   .product-card {
-    border-radius: 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.04);
   }
 
   .product-img-wrap, .product-img {
-    height: 120px;
-    font-size: 40px;
+    height: 130px;
+    font-size: 44px;
   }
 
   .product-info {
-    padding: 10px;
+    padding: 12px;
+  }
+
+  .product-category {
+    font-size: 9px;
   }
 
   .product-name {
     font-size: 13px;
-    white-space: nowrap;
+    font-weight: 600;
+    height: 36px;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
   }
 
   .product-price {
-    font-size: 16px;
+    font-size: 17px;
   }
 
   .product-return {
     font-size: 10px;
   }
 
-  /* Navbar details */
+  .product-card .btn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  /* Mobile Stats Grid (2 Columns) */
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+  }
+
+  .stat-icon {
+    font-size: 24px;
+    top: 12px;
+    right: 12px;
+  }
+
+  /* iOS Bottom Sheet style for Modals on Mobile */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal {
+    max-width: 100% !important;
+    border-radius: 28px 28px 0 0 !important;
+    margin: 0;
+    padding: 24px 20px 40px 20px;
+    transform: translateY(100%) !important;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  .modal-overlay.active .modal {
+    transform: translateY(0) !important;
+  }
+
+  /* Form & inputs size optimization for touch */
+  .form-control {
+    padding: 14px 16px;
+    font-size: 15px;
+  }
+
+  .btn {
+    padding: 14px 20px;
+    font-size: 15px;
+  }
+
+  /* Mobile Navbar */
   .navbar {
     padding: 0 16px;
+    height: 64px;
+  }
+
+  .navbar-brand .logo-text {
+    font-size: 19px;
+  }
+
+  .navbar-brand .logo-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+    border-radius: 9px;
   }
 
   .navbar-center {
-    display: none; /* Hide main search bar on mobile navbar to avoid overlap */
+    display: none;
   }
 
+  /* Hero Section */
   .hero-banner {
-    height: 240px;
+    height: 200px;
+    margin: 0;
+    border-radius: 0;
     padding: 24px 16px;
   }
 
-  .hero-banner h1 {
+  .hero-content h1 {
     font-size: 24px;
+    line-height: 1.2;
   }
 
-  .hero-banner p {
-    font-size: 13px;
+  .hero-content p {
+    font-size: 12px;
+    margin-bottom: 16px;
   }
 
   .hero-stats {
     display: none;
   }
 
-  /* Layout forms & details */
-  div[style*="grid-template-columns:1fr 1fr"] {
+  /* Auto-collapsing 2-column layouts to single column */
+  div[style*="grid-template-columns: 1fr 1fr"],
+  div[style*="grid-template-columns:1fr 1fr"],
+  div[style*="grid-template-columns: 1fr 1fr 1fr"] {
     grid-template-columns: 1fr !important;
     gap: 16px !important;
+  }
+
+  /* Admin Header */
+  .admin-nav {
+    top: 64px;
+    padding: 6px 16px;
+    font-size: 11px;
+  }
+
+  /* Table styling wrapper for mobile readability */
+  .table-wrap {
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  }
+
+  th {
+    padding: 12px;
+    font-size: 11px;
+  }
+
+  td {
+    padding: 12px;
+    font-size: 13px;
   }
 }
