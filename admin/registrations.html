@@ -103,17 +103,19 @@
       <!-- Create New Code -->
       <div class="glass-card" style="margin-bottom:24px;">
         <div style="font-size:16px;font-weight:700;margin-bottom:16px;">🎟️ Create New Referral Code</div>
-        <div style="display:flex;gap:12px;align-items:flex-end;">
-          <div style="flex:1;">
+        <div style="display:grid;gap:16px;">
+          <div>
             <label class="form-label">Referral Code</label>
-            <input type="text" id="new-ref-code" class="form-control" placeholder="e.g. PREMIUM2024" style="text-transform:uppercase;letter-spacing:2px;font-weight:600;" oninput="this.value=this.value.toUpperCase().replace(/\s/g,'')">
+            <input type="text" id="new-ref-code" class="form-control" placeholder="e.g. PREMIUM2024" style="text-transform:uppercase;letter-spacing:2px;font-weight:600;text-align:center;" oninput="this.value=this.value.toUpperCase().replace(/\s/g,'')">
           </div>
-          <button class="btn btn-primary" onclick="handleCreateCode()" style="padding:12px 28px;white-space:nowrap;">
-            ➕ Create Code
-          </button>
-          <button class="btn btn-outline" onclick="generateRandomCode()" style="padding:12px 20px;white-space:nowrap;">
-            🎲 Random
-          </button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <button class="btn btn-primary" onclick="handleCreateCode()" style="padding:12px;">
+              ➕ Create Code
+            </button>
+            <button class="btn btn-outline" onclick="generateRandomCode()" style="padding:12px;">
+              🎲 Random Code
+            </button>
+          </div>
         </div>
         <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">Codes are alphanumeric, uppercase only. Share with users you want to invite.</div>
       </div>
