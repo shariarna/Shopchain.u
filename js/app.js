@@ -149,7 +149,7 @@ function mergeArrays(localArr, remoteArr) {
 async function syncWithRemote() {
   if (!REMOTE_DB_URL) return;
   try {
-    const res = await fetch(REMOTE_DB_URL);
+    const res = await fetch(REMOTE_DB_URL + '?nocache=' + Date.now());
     const remoteDB = await res.json();
     if (remoteDB && !remoteDB.error) {
       const local = JSON.parse(localStorage.getItem(DB_KEY)) || defaultDB;
