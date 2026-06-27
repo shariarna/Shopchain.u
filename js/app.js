@@ -58,6 +58,88 @@ const defaultDB = {
 };
 
 // ---- DB Functions ----
+// Public Realtime Database REST URL (synced across all Vercel/phone sessions)
+const REMOTE_DB_URL = 'https://shopchain-default-default-rtdb.firebaseio.com/db.json';
+
+function mergeArrays(localArr, remoteArr) {
+  if (!localArr) return remoteArr || [];
+  if (!remoteArr) return localArr || [];
+  const map = new Map();
+  remoteArr.forEach(item => map.set(item.id || item.code, item));
+  localArr.forEach(item => {
+    const key = item.id || item.code;
+    if (!map.has(key)) {
+      map.set(key, item);
+    } else {
+      map.set(key, { ...map.get(key), ...item });
+    }
+  });
+  return Array.from(map.values());
+}
+
+async function syncWithRemote() {
+  if (!REMOTE_DB_URL) return;
+  try {
+    const res = await fetch(REMOTE_DB_URL);
+    const remoteDB = await res.json();
+    if (remoteDB) {
+      const local = JSON.parse(localStorage.getItem(DB_KEY)) || defaultDB;
+      
+      const merged = {
+        users: mergeArrays(local.users, remoteDB.users),
+        products: defaultDB.products, // keep images synced
+        deposits: mergeArrays(local.deposits, remoteDB.deposits),
+        purchases: mergeArrays(local.purchases, remoteDB.purchases),
+        withdrawals: mergeArrays(local.withdrawals, remoteDB.withdrawals),
+        pendingRegistrations: mergeArrays(local.pendingRegistrations, remoteDB.pendingRegistrations),
+        referralCodes: mergeArrays(local.referralCodes, remoteDB.referralCodes),
+        siteSettings: remoteDB.siteSettings || local.siteSettings,
+        sessions: { ...remoteDB.sessions, ...local.sessions }
+      };
+      
+      localStorage.setItem(DB_KEY, JSON.stringify(merged));
+      
+      if (JSON.stringify(merged) !== JSON.stringify(remoteDB)) {
+        await fetch(REMOTE_DB_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(merged)
+        });
+      }
+    } else {
+      // If remote DB is empty, initialize it with local DB
+      const local = JSON.parse(localStorage.getItem(DB_KEY)) || defaultDB;
+      await fetch(REMOTE_DB_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(local)
+      });
+    }
+  } catch (e) {
+    console.error("Sync error:", e);
+  }
+}
+
+// Initial Sync trigger
+syncWithRemote();
+
+// Periodically sync every 4 seconds and refresh UI dynamically if database changes
+setInterval(async () => {
+  const oldRaw = localStorage.getItem(DB_KEY);
+  await syncWithRemote();
+  const newRaw = localStorage.getItem(DB_KEY);
+  
+  if (oldRaw !== newRaw) {
+    console.log("⚡ Realtime DB Synced!");
+    if (typeof renderUsers === 'function') renderUsers();
+    if (typeof renderDeposits === 'function') renderDeposits();
+    if (typeof renderRegistrations === 'function') renderRegistrations();
+    if (typeof renderWithdrawals === 'function') renderWithdrawals();
+    if (typeof loadWallets === 'function') loadWallets();
+    if (typeof renderProducts === 'function') renderProducts();
+  }
+}, 4000);
+
 function getDB() {
   const raw = localStorage.getItem(DB_KEY);
   if (!raw) {
@@ -108,6 +190,13 @@ function getEnabledWallets() {
 
 function saveDB(db) {
   localStorage.setItem(DB_KEY, JSON.stringify(db));
+  if (REMOTE_DB_URL) {
+    fetch(REMOTE_DB_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(db)
+    }).catch(err => console.error(err));
+  }
 }
 
 // ---- Auth Functions ----
