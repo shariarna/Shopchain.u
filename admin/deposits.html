@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deposit Management — ShopChain Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .admin-nav { background: rgba(239,68,68,0.08); border-bottom: 1px solid rgba(239,68,68,0.2); padding: 8px 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--danger); position: sticky; top: 70px; z-index: 100; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/admin/index.html" class="navbar-brand">
+    <div class="logo-icon" style="background:linear-gradient(135deg,#ef4444,#dc2626);">A</div>
+    <div class="logo-text" style="background:linear-gradient(135deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">ShopChain Admin</div>
+  </a>
+  <div class="navbar-right" id="nav-right"></div>
+</nav>
+<div class="admin-nav">🛠️ <strong>Admin Panel</strong> — Deposit Management</div>
+
+<div class="page-layout">
+  <aside class="sidebar">
+    <div class="sidebar-menu">
+      <a href="/admin/index.html" class="sidebar-item"><span class="icon">📊</span> Dashboard</a>
+      <a href="/admin/registrations.html" class="sidebar-item"><span class="icon">📝</span> Registrations</a>
+      <a href="/admin/deposits.html" class="sidebar-item active"><span class="icon">💰</span> Deposits</a>
+      <a href="/admin/withdrawals.html" class="sidebar-item"><span class="icon">💸</span> Withdrawals</a>
+      <a href="/admin/users.html" class="sidebar-item"><span class="icon">👥</span> Users</a>
+      <a href="/admin/settings.html" class="sidebar-item"><span class="icon">⚙️</span> Settings</a>
+      <div style="height:1px;background:var(--border);margin:8px 0;"></div>
+      <a href="/index.html" class="sidebar-item"><span class="icon">🌐</span> Main Site</a>
+      <a href="#" onclick="logout()" class="sidebar-item" style="color:var(--danger);margin-top:4px;"><span class="icon">🚪</span> Logout</a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="page-header">
+      <h1>💰 Deposit Management</h1>
+      <p>Review all deposit requests and approve or reject them</p>
+    </div>
+
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
+      <div class="stat-card" style="border-left:4px solid var(--warning);">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value" style="color:var(--warning);" id="cnt-pending">0</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--success);">
+        <div class="stat-label">Approved</div>
+        <div class="stat-value green" id="cnt-approved">0</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--danger);">
+        <div class="stat-label">Rejected</div>
+        <div class="stat-value" style="color:var(--danger);" id="cnt-rejected">0</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--primary);">
+        <div class="stat-label">Total Approved</div>
+        <div class="stat-value orange" id="total-approved">$0</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      <button class="chip active" onclick="filterDeposits('all', this)">All</button>
+      <button class="chip" onclick="filterDeposits('pending', this)">⏳ Pending</button>
+      <button class="chip" onclick="filterDeposits('approved', this)">✅ Approved</button>
+      <button class="chip" onclick="filterDeposits('rejected', this)">❌ Rejected</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>User</th><th>Amount</th><th>Crypto</th><th>Transaction ID</th><th>Status</th><th>Date</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="deposits-tbody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">Deposit Details</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  let filterStatus = 'all';
+
+  window.onload = function () {
+    const user = requireAuth(true);
+    if (!user) return;
+    updateNavBar(user);
+    renderDeposits();
+  };
+
+  function filterDeposits(status, btn) {
+    filterStatus = status;
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    renderDeposits();
+  }
+
+  function renderDeposits() {
+    const db = getDB();
+    let deposits = [...db.deposits].sort((a, b) => b.createdAt - a.createdAt);
+
+    const pending = deposits.filter(d => d.status === 'pending');
+    const approved = deposits.filter(d => d.status === 'approved');
+    const rejected = deposits.filter(d => d.status === 'rejected');
+
+    document.getElementById('cnt-pending').textContent = pending.length;
+    document.getElementById('cnt-approved').textContent = approved.length;
+    document.getElementById('cnt-rejected').textContent = rejected.length;
+    document.getElementById('total-approved').textContent = formatMoney(approved.reduce((s, d) => s + d.amount, 0));
+
+    if (filterStatus !== 'all') deposits = deposits.filter(d => d.status === filterStatus);
+
+    const tbody = document.getElementById('deposits-tbody');
+    if (deposits.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">No deposits found</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = deposits.map(d => {
+      const user = db.users.find(u => u.id === d.userId);
+      const badges = { pending: 'badge-warning', approved: 'badge-success', rejected: 'badge-danger' };
+      const labels = { pending: '⏳ Pending', approved: '✅ Approved', rejected: '❌ Rejected' };
+      return `<tr>
+        <td style="font-family:monospace;font-size:11px;color:var(--text-muted);">${d.id}</td>
+        <td>
+          <div style="font-weight:600;">${user ? user.name : 'Unknown'}</div>
+          <div style="font-size:12px;color:var(--text-muted);">${user ? user.email : ''}</div>
+        </td>
+        <td style="font-weight:800;color:var(--success);font-size:16px;">$${d.amount.toFixed(2)}</td>
+        <td><span class="badge badge-info">${d.crypto}</span></td>
+        <td style="max-width:150px;">
+          <div style="font-family:monospace;font-size:11px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${d.txid}">${d.txid}</div>
+        </td>
+        <td><span class="badge ${badges[d.status]}">${labels[d.status]}</span></td>
+        <td style="font-size:12px;color:var(--text-secondary);">${formatDate(d.createdAt)}</td>
+        <td>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="showDetail('${d.id}')">🔍</button>
+            ${d.status === 'pending' ? `
+              <button class="btn btn-success btn-sm" onclick="approveDep('${d.id}')">✅</button>
+              <button class="btn btn-danger btn-sm" onclick="rejectDep('${d.id}')">❌</button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function showDetail(depositId) {
+    const db = getDB();
+    const d = db.deposits.find(x => x.id === depositId);
+    const user = db.users.find(u => u.id === d.userId);
+    document.getElementById('modal-content').innerHTML = `
+      <div style="display:grid;gap:12px;">
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">User:</span><strong>${user ? user.name : 'Unknown'}</strong></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Email:</span><span>${user ? user.email : '—'}</span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Amount:</span><strong style="color:var(--success);font-size:18px;">$${d.amount.toFixed(2)}</strong></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Crypto:</span><strong>${d.crypto}</strong></div>
+        <div>
+          <div style="color:var(--text-secondary);margin-bottom:6px;">Transaction ID:</div>
+          <div style="font-family:monospace;font-size:12px;background:rgba(255,255,255,0.04);padding:10px;border-radius:8px;word-break:break-all;">${d.txid}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Date:</span><span>${formatDate(d.createdAt)}</span></div>
+        ${d.status === 'pending' ? `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+            <button class="btn btn-success" onclick="approveDep('${d.id}');closeModal()">✅ Approve</button>
+            <button class="btn btn-danger" onclick="rejectDep('${d.id}');closeModal()">❌ Reject</button>
+          </div>` : ''}
+      </div>`;
+    document.getElementById('detail-modal').classList.add('active');
+  }
+
+  function closeModal() { document.getElementById('detail-modal').classList.remove('active'); }
+
+  function approveDep(id) {
+    if (approveDeposit(id)) { showToast('✅ Deposit approved! Balance credited.', 'success'); renderDeposits(); }
+  }
+  function rejectDep(id) {
+    if (confirm('Are you sure you want to reject this deposit?')) {
+      if (rejectDeposit(id)) { showToast('❌ Deposit rejected.', 'error'); renderDeposits(); }
+    }
+  }
+
+  document.getElementById('detail-modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+</script>
+</body>
+</html>

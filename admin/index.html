@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — ShopChain</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .admin-nav { background: rgba(239,68,68,0.08); border-bottom: 1px solid rgba(239,68,68,0.2); padding: 8px 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--danger); position: sticky; top: 70px; z-index: 100; }
+    .pending-alert { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 12px; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/admin/index.html" class="navbar-brand">
+    <div class="logo-icon" style="background:linear-gradient(135deg,#ef4444,#dc2626);">A</div>
+    <div class="logo-text" style="background:linear-gradient(135deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">ShopChain Admin</div>
+  </a>
+  <div class="navbar-right" id="nav-right"></div>
+</nav>
+<div class="admin-nav">
+  🛠️ <strong>Admin Panel</strong> — Control center for users, deposits, withdrawals & registrations
+</div>
+
+<div class="page-layout">
+  <aside class="sidebar">
+    <div class="sidebar-menu">
+      <a href="/admin/index.html" class="sidebar-item active"><span class="icon">📊</span> Dashboard</a>
+      <a href="/admin/registrations.html" class="sidebar-item" id="nav-regs"><span class="icon">📝</span> Registrations <span id="nav-reg-badge" style="display:none;background:var(--warning);color:#000;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;margin-left:auto;"></span></a>
+      <a href="/admin/deposits.html" class="sidebar-item"><span class="icon">💰</span> Deposits</a>
+      <a href="/admin/withdrawals.html" class="sidebar-item"><span class="icon">💸</span> Withdrawals</a>
+      <a href="/admin/users.html" class="sidebar-item"><span class="icon">👥</span> Users</a>
+      <a href="/admin/settings.html" class="sidebar-item"><span class="icon">⚙️</span> Settings</a>
+      <div style="height:1px;background:var(--border);margin:8px 0;"></div>
+      <a href="/index.html" class="sidebar-item"><span class="icon">🌐</span> Main Site</a>
+      <a href="#" onclick="logout()" class="sidebar-item" style="color:var(--danger);margin-top:4px;"><span class="icon">🚪</span> Logout</a>
+    </div>
+    <div class="glass-card" style="margin-top:16px;border-color:rgba(245,158,11,0.3);">
+      <div style="font-size:13px;font-weight:700;color:var(--warning);margin-bottom:12px;">⚠️ Pending</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">
+        Registrations: <strong style="color:var(--warning);" id="side-pending-reg">0</strong>
+      </div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">
+        Deposits: <strong style="color:var(--warning);" id="side-pending-dep">0</strong>
+      </div>
+      <div style="font-size:13px;color:var(--text-secondary);">
+        Withdrawals: <strong style="color:var(--warning);" id="side-pending-wtd">0</strong>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="page-header">
+      <h1>📊 Admin Dashboard</h1>
+      <p>Monitor and control all site activity</p>
+    </div>
+
+    <!-- Pending Registrations Alert -->
+    <div id="reg-alert" style="display:none;" class="pending-alert">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:24px;">👤</span>
+        <div>
+          <div style="font-weight:700;color:var(--warning);" id="reg-alert-text">New registration requests waiting!</div>
+          <div style="font-size:13px;color:var(--text-secondary);">Review and approve or reject them.</div>
+        </div>
+      </div>
+      <a href="/admin/registrations.html" class="btn btn-primary btn-sm" style="white-space:nowrap;">Review Now →</a>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
+      <div class="stat-card" style="border-left:4px solid var(--warning);">
+        <div class="stat-icon">📝</div>
+        <div class="stat-label">Pending Signups</div>
+        <div class="stat-value" style="color:var(--warning);" id="s-pending-reg">0</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--info);">
+        <div class="stat-icon">👥</div>
+        <div class="stat-label">Active Users</div>
+        <div class="stat-value blue" id="s-users">0</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--success);">
+        <div class="stat-icon">💰</div>
+        <div class="stat-label">Approved Deposits</div>
+        <div class="stat-value green" id="s-dep">$0</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--warning);">
+        <div class="stat-icon">⏳</div>
+        <div class="stat-label">Pending Deposits</div>
+        <div class="stat-value" style="color:var(--warning);" id="s-dep-pend">0</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--danger);">
+        <div class="stat-icon">💸</div>
+        <div class="stat-label">Pending Withdrawals</div>
+        <div class="stat-value" style="color:var(--danger);" id="s-wtd-pend">0</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--primary);">
+        <div class="stat-icon">🛒</div>
+        <div class="stat-label">Total Purchases</div>
+        <div class="stat-value orange" id="s-buys">0</div>
+      </div>
+    </div>
+
+    <!-- Recent Registration Requests -->
+    <div class="section-title">📝 Recent Registration Requests</div>
+    <div class="table-wrap" style="margin-bottom:28px;">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Code</th><th>Status</th><th>Date</th><th>Action</th></tr>
+        </thead>
+        <tbody id="recent-regs"></tbody>
+      </table>
+    </div>
+
+    <!-- Recent Deposits -->
+    <div class="section-title">💰 Recent Deposit Requests</div>
+    <div class="table-wrap" style="margin-bottom:28px;">
+      <table>
+        <thead>
+          <tr><th>User</th><th>Amount</th><th>Crypto</th><th>Status</th><th>Date</th><th>Action</th></tr>
+        </thead>
+        <tbody id="recent-deposits"></tbody>
+      </table>
+    </div>
+
+    <!-- Recent Withdrawals -->
+    <div class="section-title">💸 Recent Withdrawal Requests</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>User</th><th>Amount</th><th>Wallet</th><th>Status</th><th>Date</th><th>Action</th></tr>
+        </thead>
+        <tbody id="recent-withdrawals"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  window.onload = function () {
+    const user = requireAuth(true);
+    if (!user) return;
+    updateNavBar(user);
+    renderAdminDash();
+  };
+
+  function renderAdminDash() {
+    const db = getDB();
+    const users = db.users.filter(u => u.role !== 'admin');
+    const deposits = db.deposits;
+    const withdrawals = db.withdrawals;
+    const purchases = db.purchases;
+    const regs = db.pendingRegistrations || [];
+
+    const pendingRegs = regs.filter(r => r.status === 'pending');
+    const pendingDeps = deposits.filter(d => d.status === 'pending');
+    const pendingWtds = withdrawals.filter(w => w.status === 'pending');
+    const approvedDeps = deposits.filter(d => d.status === 'approved').reduce((s, d) => s + d.amount, 0);
+
+    // Stats
+    document.getElementById('s-pending-reg').textContent = pendingRegs.length;
+    document.getElementById('s-users').textContent = users.length;
+    document.getElementById('s-dep').textContent = formatMoney(approvedDeps);
+    document.getElementById('s-dep-pend').textContent = pendingDeps.length;
+    document.getElementById('s-wtd-pend').textContent = pendingWtds.length;
+    document.getElementById('s-buys').textContent = purchases.length;
+    document.getElementById('side-pending-reg').textContent = pendingRegs.length;
+    document.getElementById('side-pending-dep').textContent = pendingDeps.length;
+    document.getElementById('side-pending-wtd').textContent = pendingWtds.length;
+
+    // Show alert if there are pending registrations
+    if (pendingRegs.length > 0) {
+      document.getElementById('reg-alert').style.display = 'flex';
+      document.getElementById('reg-alert-text').textContent = `${pendingRegs.length} new registration request${pendingRegs.length > 1 ? 's' : ''} waiting for approval!`;
+      document.getElementById('nav-reg-badge').style.display = 'inline-block';
+      document.getElementById('nav-reg-badge').textContent = pendingRegs.length;
+    } else {
+      document.getElementById('reg-alert').style.display = 'none';
+    }
+
+    // Recent Registrations
+    const regsTbody = document.getElementById('recent-regs');
+    const recentRegs = [...regs].sort((a, b) => b.createdAt - a.createdAt).slice(0, 6);
+    if (recentRegs.length === 0) {
+      regsTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">No registration requests yet</td></tr>';
+    } else {
+      const badges = { pending: 'badge-warning', approved: 'badge-success', rejected: 'badge-danger' };
+      const labels = { pending: '⏳ Pending', approved: '✅ Approved', rejected: '❌ Rejected' };
+      regsTbody.innerHTML = recentRegs.map(r => `
+        <tr>
+          <td style="font-weight:600;">${r.name}</td>
+          <td style="color:var(--text-secondary);font-size:13px;">${r.email}</td>
+          <td><span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:var(--success);padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:1px;">${r.referralCode}</span></td>
+          <td><span class="badge ${badges[r.status]}">${labels[r.status]}</span></td>
+          <td style="font-size:12px;color:var(--text-secondary);">${formatDate(r.createdAt)}</td>
+          <td>${r.status === 'pending' ? `
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-success btn-sm" onclick="approveReg('${r.id}')">✅ Approve</button>
+              <button class="btn btn-danger btn-sm" onclick="rejectReg('${r.id}')">❌</button>
+            </div>` : '—'}</td>
+        </tr>`).join('');
+    }
+
+    // Recent Deposits
+    const depTbody = document.getElementById('recent-deposits');
+    const recentDeps = [...deposits].sort((a, b) => b.createdAt - a.createdAt).slice(0, 6);
+    if (recentDeps.length === 0) {
+      depTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">No deposits yet</td></tr>';
+    } else {
+      depTbody.innerHTML = recentDeps.map(d => {
+        const user = db.users.find(u => u.id === d.userId);
+        return `<tr>
+          <td style="font-weight:500;">${user ? user.name : 'Unknown'}</td>
+          <td style="font-weight:700;color:var(--success);">+${formatMoney(d.amount)}</td>
+          <td><span class="badge badge-info">${d.crypto}</span></td>
+          <td>${statusBadge(d.status)}</td>
+          <td style="font-size:12px;color:var(--text-secondary);">${formatDate(d.createdAt)}</td>
+          <td>${d.status === 'pending' ? `
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-success btn-sm" onclick="approveDep('${d.id}')">✅</button>
+              <button class="btn btn-danger btn-sm" onclick="rejectDep('${d.id}')">❌</button>
+            </div>` : '—'}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // Recent Withdrawals
+    const wtdTbody = document.getElementById('recent-withdrawals');
+    const recentWtds = [...withdrawals].sort((a, b) => b.createdAt - a.createdAt).slice(0, 6);
+    if (recentWtds.length === 0) {
+      wtdTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">No withdrawals yet</td></tr>';
+    } else {
+      wtdTbody.innerHTML = recentWtds.map(w => {
+        const user = db.users.find(u => u.id === w.userId);
+        return `<tr>
+          <td style="font-weight:500;">${user ? user.name : 'Unknown'}</td>
+          <td style="font-weight:700;color:var(--danger);">-${formatMoney(w.amount)}</td>
+          <td style="font-size:12px;color:var(--text-secondary);">${w.crypto}: ${w.walletAddress.substring(0, 16)}...</td>
+          <td>${statusBadge(w.status)}</td>
+          <td style="font-size:12px;color:var(--text-secondary);">${formatDate(w.createdAt)}</td>
+          <td>${w.status === 'pending' ? `
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-success btn-sm" onclick="approveWtd('${w.id}')">✅</button>
+              <button class="btn btn-danger btn-sm" onclick="rejectWtd('${w.id}')">❌</button>
+            </div>` : '—'}</td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
+  function statusBadge(s) {
+    const m = { pending: 'badge-warning', approved: 'badge-success', rejected: 'badge-danger' };
+    const l = { pending: '⏳ Pending', approved: '✅ Approved', rejected: '❌ Rejected' };
+    return `<span class="badge ${m[s]}">${l[s]}</span>`;
+  }
+
+  function approveReg(id) {
+    if (approveRegistration(id)) { showToast('✅ Account approved! User can now login.', 'success'); renderAdminDash(); }
+  }
+  function rejectReg(id) {
+    if (confirm('Reject this registration?')) {
+      if (rejectRegistration(id)) { showToast('❌ Registration rejected.', 'error'); renderAdminDash(); }
+    }
+  }
+  function approveDep(id) {
+    if (approveDeposit(id)) { showToast('✅ Deposit approved! Balance credited.', 'success'); renderAdminDash(); }
+  }
+  function rejectDep(id) {
+    if (confirm('Reject this deposit?')) {
+      if (rejectDeposit(id)) { showToast('❌ Deposit rejected.', 'error'); renderAdminDash(); }
+    }
+  }
+  function approveWtd(id) {
+    if (approveWithdraw(id)) { showToast('✅ Withdrawal approved!', 'success'); renderAdminDash(); }
+  }
+  function rejectWtd(id) {
+    if (confirm('Reject this withdrawal? Balance will be refunded.')) {
+      if (rejectWithdraw(id)) { showToast('❌ Withdrawal rejected. Balance refunded.', 'error'); renderAdminDash(); }
+    }
+  }
+</script>
+</body>
+</html>

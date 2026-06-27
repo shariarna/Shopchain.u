@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopChain — Crypto-Powered Shopping Marketplace</title>
+  <meta name="description" content="The best crypto-powered shopping marketplace. Buy products, hold them, and sell at 1.5x profit.">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="/index.html" class="navbar-brand">
+    <div class="logo-icon">S</div>
+    <div class="logo-text">ShopChain</div>
+  </a>
+  <div class="navbar-center">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="Search products..." oninput="filterProducts()">
+    </div>
+  </div>
+  <div class="navbar-right" id="nav-right">
+    <a href="/login.html" class="nav-btn nav-btn-ghost">Login</a>
+    <a href="/register.html" class="nav-btn nav-btn-primary">Register</a>
+  </div>
+</nav>
+
+<!-- HERO BANNER -->
+<div class="hero-banner">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <h1>Buy with Crypto,<br><span>Sell at 1.5x Profit</span></h1>
+    <p>The first crypto-powered shopping marketplace. Buy products, hold for 12 hours, and sell at 150% return.</p>
+    <a href="/register.html" class="btn btn-primary" style="width:auto;padding:14px 32px;font-size:16px;">
+      🚀 Get Started Now
+    </a>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-value">12+</div>
+        <div class="hero-stat-label">Products</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">150%</div>
+        <div class="hero-stat-label">Return</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">USDT</div>
+        <div class="hero-stat-label">Deposit</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="container">
+
+  <!-- HOW IT WORKS -->
+  <div style="margin-bottom:40px;">
+    <div class="section-title">How It Works</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+      <div class="stat-card" style="text-align:center;padding:28px 20px;">
+        <div style="font-size:40px;margin-bottom:12px;">💰</div>
+        <div style="font-weight:700;margin-bottom:8px;font-size:16px;">Deposit Crypto</div>
+        <div style="font-size:13px;color:var(--text-secondary);">Fund your account using USDT, BTC, or ETH to get started</div>
+      </div>
+      <div class="stat-card" style="text-align:center;padding:28px 20px;">
+        <div style="font-size:40px;margin-bottom:12px;">🛒</div>
+        <div style="font-weight:700;margin-bottom:8px;font-size:16px;">Buy a Product</div>
+        <div style="font-size:13px;color:var(--text-secondary);">Choose any product and purchase it using your account balance</div>
+      </div>
+      <div class="stat-card" style="text-align:center;padding:28px 20px;">
+        <div style="font-size:40px;margin-bottom:12px;">📈</div>
+        <div style="font-weight:700;margin-bottom:8px;font-size:16px;">Sell at 1.5x Price</div>
+        <div style="font-size:13px;color:var(--text-secondary);">After 12 hours, sell your product at 150% of the purchase price</div>
+      </div>
+      <div class="stat-card" style="text-align:center;padding:28px 20px;">
+        <div style="font-size:40px;margin-bottom:12px;">💸</div>
+        <div style="font-weight:700;margin-bottom:8px;font-size:16px;">Withdraw Profits</div>
+        <div style="font-size:13px;color:var(--text-secondary);">Withdraw your earnings in crypto (requires admin approval)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CATEGORY FILTER -->
+  <div class="section-title">All Products</div>
+  <div class="category-chips" id="category-chips">
+    <button class="chip active" onclick="filterByCategory('all', this)">🌟 All</button>
+    <button class="chip" onclick="filterByCategory('Electronics', this)">📱 Electronics</button>
+    <button class="chip" onclick="filterByCategory('Fashion', this)">👗 Fashion</button>
+    <button class="chip" onclick="filterByCategory('Watches', this)">⌚ Watches</button>
+    <button class="chip" onclick="filterByCategory('Gaming', this)">🎮 Gaming</button>
+    <button class="chip" onclick="filterByCategory('Furniture', this)">🪑 Furniture</button>
+  </div>
+
+  <!-- PRODUCT GRID -->
+  <div class="product-grid" id="product-grid"></div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="navbar-brand" style="margin-bottom:12px;">
+        <div class="logo-icon">S</div>
+        <div class="logo-text">ShopChain</div>
+      </div>
+      <p>The first crypto-powered shopping marketplace. Shop safely and earn profits on every purchase.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Pages</h4>
+      <a href="/index.html">Home</a>
+      <a href="/dashboard.html">Dashboard</a>
+      <a href="/deposit.html">Deposit</a>
+      <a href="/withdraw.html">Withdraw</a>
+    </div>
+    <div class="footer-col">
+      <h4>Support</h4>
+      <a href="#">Contact Us</a>
+      <a href="#">FAQ</a>
+      <a href="#">Terms</a>
+    </div>
+    <div class="footer-col">
+      <h4>Crypto</h4>
+      <a href="#">USDT TRC20</a>
+      <a href="#">Bitcoin (BTC)</a>
+      <a href="#">Ethereum (ETH)</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2024 ShopChain. All rights reserved.</span>
+    <span>Made with ❤️ for traders worldwide</span>
+  </div>
+</footer>
+
+<!-- BUY MODAL -->
+<div class="modal-overlay" id="buy-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-product-title">Buy Product</div>
+      <button class="modal-close" onclick="closeBuyModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  let currentCategory = 'all';
+  let searchQuery = '';
+
+  window.onload = function () {
+    const user = getCurrentUser();
+    updateNavBar(user);
+    renderProducts();
+  };
+
+  function renderProducts() {
+    const db = getDB();
+    const grid = document.getElementById('product-grid');
+    let products = db.products;
+
+    if (currentCategory !== 'all') products = products.filter(p => p.category === currentCategory);
+    if (searchQuery) products = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    if (products.length === 0) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div><h3>No products found</h3><p>Try a different search keyword</p></div>`;
+      return;
+    }
+
+    grid.innerHTML = products.map(p => `
+      <div class="product-card fade-up" onclick="showBuyModal('${p.id}')">
+        <div class="product-img-wrap">
+          <div style="font-size:70px;">${p.emoji}</div>
+        </div>
+        <div class="product-info">
+          <div class="product-category">${p.category}</div>
+          <div class="product-name">${p.name}</div>
+          <div class="product-return">📈 Sell for ${formatMoney(p.price * 1.5)} after 12 hrs</div>
+          <div class="product-price-row">
+            <div class="product-price">${formatMoney(p.price)}</div>
+            <div class="product-sell-price">+50% 🚀</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showBuyModal('${p.id}')">
+            🛒 Buy Now
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function filterByCategory(cat, btn) {
+    currentCategory = cat;
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    renderProducts();
+  }
+
+  function filterProducts() {
+    searchQuery = document.getElementById('search-input').value;
+    renderProducts();
+  }
+
+  function showBuyModal(productId) {
+    const user = getCurrentUser();
+    const db = getDB();
+    const product = db.products.find(p => p.id === productId);
+    if (!product) return;
+
+    document.getElementById('modal-product-title').textContent = product.name;
+
+    if (!user) {
+      document.getElementById('modal-body').innerHTML = `
+        <div style="text-align:center;padding:20px 0;">
+          <div style="font-size:60px;margin-bottom:16px;">${product.emoji}</div>
+          <div style="font-size:18px;font-weight:700;margin-bottom:8px;">${product.name}</div>
+          <div style="color:var(--text-secondary);font-size:14px;margin-bottom:24px;">${product.description}</div>
+          <div style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:12px;padding:16px;margin-bottom:20px;">
+            <div style="font-size:13px;color:var(--text-secondary);">Buy Price</div>
+            <div style="font-size:28px;font-weight:800;color:var(--primary);">${formatMoney(product.price)}</div>
+            <div style="font-size:13px;color:var(--success);">↑ Sell Price: ${formatMoney(product.price * 1.5)}</div>
+          </div>
+          <p style="font-size:14px;color:var(--text-secondary);margin-bottom:20px;">Please login to purchase this product</p>
+          <a href="/login.html" class="btn btn-primary">🔑 Login Now</a>
+        </div>`;
+    } else {
+      const canAfford = user.balance >= product.price;
+      document.getElementById('modal-body').innerHTML = `
+        <div style="text-align:center;padding:10px 0;">
+          <div style="font-size:60px;margin-bottom:12px;">${product.emoji}</div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:6px;">${product.name}</div>
+          <div style="color:var(--text-secondary);font-size:13px;margin-bottom:20px;">${product.description}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+            <div style="background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:10px;padding:12px;">
+              <div style="font-size:12px;color:var(--text-secondary);">Buy Price</div>
+              <div style="font-size:22px;font-weight:800;color:var(--primary);">${formatMoney(product.price)}</div>
+            </div>
+            <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:12px;">
+              <div style="font-size:12px;color:var(--text-secondary);">Sell Price (after 12 hrs)</div>
+              <div style="font-size:22px;font-weight:800;color:var(--success);">${formatMoney(product.price * 1.5)}</div>
+            </div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:12px;margin-bottom:20px;font-size:14px;">
+            Your Balance: <strong style="color:${canAfford ? 'var(--success)' : 'var(--danger)'};">${formatMoney(user.balance)}</strong>
+          </div>
+          ${canAfford
+            ? `<button class="btn btn-primary" onclick="confirmBuy('${product.id}')">✅ Confirm Purchase</button>`
+            : `<div class="info-box warning" style="margin-bottom:12px;">💳 Insufficient balance! Please deposit first.</div>
+               <a href="/deposit.html" class="btn btn-primary">💰 Deposit Now</a>`
+          }
+        </div>`;
+    }
+
+    document.getElementById('buy-modal').classList.add('active');
+  }
+
+  function closeBuyModal() {
+    document.getElementById('buy-modal').classList.remove('active');
+  }
+
+  function confirmBuy(productId) {
+    const user = getCurrentUser();
+    if (!user) { window.location.href = '/login.html'; return; }
+    const result = buyProduct(user.id, productId);
+    if (result.success) {
+      showToast('🎉 Product purchased! You can sell it in 12 hours.', 'success');
+      closeBuyModal();
+      updateNavBar(getCurrentUser());
+      renderProducts();
+    } else {
+      showToast(result.message, 'error');
+    }
+  }
+
+  document.getElementById('buy-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeBuyModal();
+  });
+</script>
+</body>
+</html>

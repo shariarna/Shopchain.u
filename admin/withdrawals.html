@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Withdrawal Management — ShopChain Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .admin-nav { background: rgba(239,68,68,0.08); border-bottom: 1px solid rgba(239,68,68,0.2); padding: 8px 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--danger); position: sticky; top: 70px; z-index: 100; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/admin/index.html" class="navbar-brand">
+    <div class="logo-icon" style="background:linear-gradient(135deg,#ef4444,#dc2626);">A</div>
+    <div class="logo-text" style="background:linear-gradient(135deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">ShopChain Admin</div>
+  </a>
+  <div class="navbar-right" id="nav-right"></div>
+</nav>
+<div class="admin-nav">🛠️ <strong>Admin Panel</strong> — Withdrawal Management</div>
+
+<div class="page-layout">
+  <aside class="sidebar">
+    <div class="sidebar-menu">
+      <a href="/admin/index.html" class="sidebar-item"><span class="icon">📊</span> Dashboard</a>
+      <a href="/admin/registrations.html" class="sidebar-item"><span class="icon">📝</span> Registrations</a>
+      <a href="/admin/deposits.html" class="sidebar-item"><span class="icon">💰</span> Deposits</a>
+      <a href="/admin/withdrawals.html" class="sidebar-item active"><span class="icon">💸</span> Withdrawals</a>
+      <a href="/admin/users.html" class="sidebar-item"><span class="icon">👥</span> Users</a>
+      <a href="/admin/settings.html" class="sidebar-item"><span class="icon">⚙️</span> Settings</a>
+      <div style="height:1px;background:var(--border);margin:8px 0;"></div>
+      <a href="/index.html" class="sidebar-item"><span class="icon">🌐</span> Main Site</a>
+      <a href="#" onclick="logout()" class="sidebar-item" style="color:var(--danger);margin-top:4px;"><span class="icon">🚪</span> Logout</a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="page-header">
+      <h1>💸 Withdrawal Management</h1>
+      <p>Approve or reject user withdrawal requests</p>
+    </div>
+
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
+      <div class="stat-card" style="border-left:4px solid var(--warning);">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value" style="color:var(--warning);" id="cnt-pending">0</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--success);">
+        <div class="stat-label">Approved</div>
+        <div class="stat-value green" id="cnt-approved">0</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--danger);">
+        <div class="stat-label">Rejected</div>
+        <div class="stat-value" style="color:var(--danger);" id="cnt-rejected">0</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--primary);">
+        <div class="stat-label">Total Paid Out</div>
+        <div class="stat-value orange" id="total-paid">$0</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      <button class="chip active" onclick="filterWtd('all', this)">All</button>
+      <button class="chip" onclick="filterWtd('pending', this)">⏳ Pending</button>
+      <button class="chip" onclick="filterWtd('approved', this)">✅ Approved</button>
+      <button class="chip" onclick="filterWtd('rejected', this)">❌ Rejected</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>User</th><th>Amount</th><th>Crypto</th><th>Wallet Address</th><th>Status</th><th>Date</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="wtd-tbody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">Withdrawal Details</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  let filterStatus = 'all';
+
+  window.onload = function () {
+    const user = requireAuth(true);
+    if (!user) return;
+    updateNavBar(user);
+    renderWithdrawals();
+  };
+
+  function filterWtd(status, btn) {
+    filterStatus = status;
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    renderWithdrawals();
+  }
+
+  function renderWithdrawals() {
+    const db = getDB();
+    let withdrawals = [...db.withdrawals].sort((a, b) => b.createdAt - a.createdAt);
+
+    const pending = withdrawals.filter(w => w.status === 'pending');
+    const approved = withdrawals.filter(w => w.status === 'approved');
+    const rejected = withdrawals.filter(w => w.status === 'rejected');
+
+    document.getElementById('cnt-pending').textContent = pending.length;
+    document.getElementById('cnt-approved').textContent = approved.length;
+    document.getElementById('cnt-rejected').textContent = rejected.length;
+    document.getElementById('total-paid').textContent = formatMoney(approved.reduce((s, w) => s + w.amount, 0));
+
+    if (filterStatus !== 'all') withdrawals = withdrawals.filter(w => w.status === filterStatus);
+
+    const tbody = document.getElementById('wtd-tbody');
+    if (withdrawals.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:32px;">No withdrawals found</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = withdrawals.map(w => {
+      const user = db.users.find(u => u.id === w.userId);
+      const badges = { pending: 'badge-warning', approved: 'badge-success', rejected: 'badge-danger' };
+      const labels = { pending: '⏳ Pending', approved: '✅ Approved', rejected: '❌ Rejected' };
+      return `<tr>
+        <td>
+          <div style="font-weight:600;">${user ? user.name : 'Unknown'}</div>
+          <div style="font-size:12px;color:var(--text-muted);">${user ? user.email : ''}</div>
+        </td>
+        <td style="font-weight:800;color:var(--danger);font-size:16px;">-$${w.amount.toFixed(2)}</td>
+        <td><span class="badge badge-info">${w.crypto}</span></td>
+        <td style="max-width:160px;">
+          <div style="font-family:monospace;font-size:11px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${w.walletAddress}">${w.walletAddress}</div>
+        </td>
+        <td><span class="badge ${badges[w.status]}">${labels[w.status]}</span></td>
+        <td style="font-size:12px;color:var(--text-secondary);">${formatDate(w.createdAt)}</td>
+        <td>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="showDetail('${w.id}')">🔍</button>
+            ${w.status === 'pending' ? `
+              <button class="btn btn-success btn-sm" onclick="approveWtd('${w.id}')">✅</button>
+              <button class="btn btn-danger btn-sm" onclick="rejectWtd('${w.id}')">❌</button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function showDetail(wId) {
+    const db = getDB();
+    const w = db.withdrawals.find(x => x.id === wId);
+    const user = db.users.find(u => u.id === w.userId);
+    document.getElementById('modal-content').innerHTML = `
+      <div style="display:grid;gap:14px;">
+        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:16px;text-align:center;">
+          <div style="font-size:13px;color:var(--text-secondary);">Withdrawal Amount</div>
+          <div style="font-size:36px;font-weight:900;color:var(--danger);">-$${w.amount.toFixed(2)}</div>
+          <div style="font-size:14px;color:var(--info);">${w.crypto}</div>
+        </div>
+        <div style="display:grid;gap:10px;">
+          <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">User:</span><strong>${user ? user.name : '—'}</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Email:</span><span>${user ? user.email : '—'}</span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Current Balance:</span><strong style="color:var(--success);">${user ? formatMoney(user.balance) : '—'}</strong></div>
+        </div>
+        <div>
+          <div style="color:var(--text-secondary);margin-bottom:6px;font-size:13px;">Wallet Address:</div>
+          <div style="font-family:monospace;font-size:12px;background:rgba(255,255,255,0.04);padding:12px;border-radius:8px;word-break:break-all;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+            <span>${w.walletAddress}</span>
+            <button onclick="navigator.clipboard.writeText('${w.walletAddress}').then(()=>showToast('Copied!','success'))" style="background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.3);border-radius:6px;padding:4px 10px;color:var(--primary);font-size:11px;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;">📋 Copy</button>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Date:</span><span>${formatDate(w.createdAt)}</span></div>
+        ${w.status === 'pending' ? `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button class="btn btn-success" onclick="approveWtd('${w.id}');closeModal()">✅ Approve</button>
+            <button class="btn btn-danger" onclick="rejectWtd('${w.id}');closeModal()">❌ Reject</button>
+          </div>` :
+          `<div class="info-box ${w.status === 'approved' ? 'success' : 'warning'}">
+            ${w.status === 'approved' ? '✅ This withdrawal has been approved and processed.' : '❌ This withdrawal was rejected. Balance was refunded to the user.'}
+          </div>`}
+      </div>`;
+    document.getElementById('detail-modal').classList.add('active');
+  }
+
+  function closeModal() { document.getElementById('detail-modal').classList.remove('active'); }
+
+  function approveWtd(id) {
+    if (approveWithdraw(id)) { showToast('✅ Withdrawal approved!', 'success'); renderWithdrawals(); }
+  }
+  function rejectWtd(id) {
+    if (confirm('Reject this withdrawal? Balance will be refunded to the user.')) {
+      if (rejectWithdraw(id)) { showToast('❌ Withdrawal rejected. Balance refunded.', 'error'); renderWithdrawals(); }
+    }
+  }
+
+  document.getElementById('detail-modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+</script>
+</body>
+</html>

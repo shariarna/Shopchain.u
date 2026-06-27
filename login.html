@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — ShopChain</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar">
+  <a href="/index.html" class="navbar-brand">
+    <div class="logo-icon">S</div>
+    <div class="logo-text">ShopChain</div>
+  </a>
+  <div class="navbar-right">
+    <a href="/register.html" class="nav-btn nav-btn-ghost">Register</a>
+  </div>
+</nav>
+
+<div style="min-height:calc(100vh - 70px);display:flex;align-items:center;justify-content:center;padding:40px 20px;position:relative;z-index:1;">
+  <div style="width:100%;max-width:440px;">
+
+    <div style="text-align:center;margin-bottom:32px;">
+      <div style="font-size:56px;margin-bottom:12px;">🔑</div>
+      <h1 style="font-size:28px;font-weight:800;margin-bottom:8px;">Welcome Back</h1>
+      <p style="color:var(--text-secondary);font-size:15px;">Sign in to your ShopChain account</p>
+    </div>
+
+    <div class="glass-card" style="border-radius:24px;">
+      <form id="login-form" onsubmit="handleLogin(event)">
+
+        <div class="form-group">
+          <label class="form-label">📧 Email Address</label>
+          <input type="email" id="email" class="form-control" placeholder="Enter your email" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">🔒 Password</label>
+          <div style="position:relative;">
+            <input type="password" id="password" class="form-control" placeholder="Enter your password" required>
+            <button type="button" onclick="togglePassword()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:18px;">👁️</button>
+          </div>
+        </div>
+
+        <div id="error-msg" style="display:none;margin-bottom:16px;" class="info-box warning"></div>
+
+        <!-- Pending account notice -->
+        <div id="pending-notice" style="display:none;margin-bottom:16px;">
+          <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:16px;">
+            <div style="font-weight:700;color:var(--warning);margin-bottom:6px;">⏳ Account Pending Approval</div>
+            <div style="font-size:13px;color:var(--text-secondary);">Your registration request is being reviewed by admin. You will be able to login once approved. Please check back later.</div>
+          </div>
+        </div>
+
+        <!-- Rejected account notice -->
+        <div id="rejected-notice" style="display:none;margin-bottom:16px;">
+          <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:16px;">
+            <div style="font-weight:700;color:var(--danger);margin-bottom:6px;">❌ Registration Rejected</div>
+            <div style="font-size:13px;color:var(--text-secondary);">Your registration was not approved. Please contact admin or try registering with a new referral code.</div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="login-btn" style="margin-top:4px;margin-bottom:20px;font-size:16px;padding:14px;">
+          🚀 Sign In
+        </button>
+
+        <div style="text-align:center;color:var(--text-secondary);font-size:14px;margin-bottom:20px;">
+          Don't have an account? <a href="/register.html" style="color:var(--primary);font-weight:600;text-decoration:none;">Register with referral code</a>
+        </div>
+
+        <div class="divider"></div>
+
+        <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;font-size:13px;color:var(--info);">
+          <strong>🛠️ Admin Login:</strong><br>
+          Email: admin@shopchain.com<br>
+          Password: admin123
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Invite only notice -->
+    <div style="margin-top:20px;background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.2);border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px;">
+      <span style="font-size:28px;">🎟️</span>
+      <div>
+        <div style="font-weight:700;font-size:14px;">Invite-Only Platform</div>
+        <div style="font-size:12px;color:var(--text-secondary);">ShopChain requires a referral code to register. Contact admin to get your code.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  if (getCurrentUser()) window.location.href = '/dashboard.html';
+
+  function togglePassword() {
+    const pwd = document.getElementById('password');
+    pwd.type = pwd.type === 'password' ? 'text' : 'password';
+  }
+
+  function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('login-btn');
+    const errMsg = document.getElementById('error-msg');
+    const pendingNotice = document.getElementById('pending-notice');
+    const rejectedNotice = document.getElementById('rejected-notice');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Signing in...';
+    errMsg.style.display = 'none';
+    pendingNotice.style.display = 'none';
+    rejectedNotice.style.display = 'none';
+
+    setTimeout(() => {
+      // Check pending/rejected status first
+      const db = getDB();
+      const pendingReg = db.pendingRegistrations && db.pendingRegistrations.find(r => r.email === email && r.status === 'pending');
+      const rejectedReg = db.pendingRegistrations && db.pendingRegistrations.find(r => r.email === email && r.status === 'rejected');
+
+      if (pendingReg && !db.users.find(u => u.email === email && u.role !== 'admin')) {
+        pendingNotice.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '🚀 Sign In';
+        return;
+      }
+
+      if (rejectedReg && !db.users.find(u => u.email === email && u.role !== 'admin')) {
+        rejectedNotice.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '🚀 Sign In';
+        return;
+      }
+
+      const result = login(email, password);
+      if (result.success) {
+        showToast('✅ Successfully logged in!', 'success');
+        setTimeout(() => {
+          window.location.href = result.user.role === 'admin' ? '/admin/index.html' : '/dashboard.html';
+        }, 800);
+      } else {
+        errMsg.style.display = 'block';
+        errMsg.textContent = '❌ ' + result.message;
+        btn.disabled = false;
+        btn.innerHTML = '🚀 Sign In';
+      }
+    }, 600);
+  }
+</script>
+</body>
+</html>

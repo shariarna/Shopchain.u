@@ -1,0 +1,575 @@
+// ============================================================
+// app.js — Main Application Logic (localStorage-based)
+// ============================================================
+
+const DB_KEY = 'shopchain_db';
+
+// ---- Default Data ----
+// ---- Site Settings (admin configurable) ----
+const defaultSettings = {
+  siteName: 'ShopChain',
+  wallets: {
+    USDT_BEP20: { address: '', network: 'BSC (BEP20)', enabled: true, autoVerify: true }
+  },
+  minDeposit: 10,
+  minWithdraw: 10,
+  holdHours: 12,
+  profitMultiplier: 1.5,
+};
+
+const defaultDB = {
+  users: [
+    {
+      id: 'admin',
+      name: 'Admin',
+      email: 'admin@shopchain.com',
+      password: 'admin123',
+      role: 'admin',
+      balance: 999999,
+      createdAt: Date.now()
+    }
+  ],
+  products: [
+    { id: 'p1', name: 'iPhone 15 Pro Max', category: 'Electronics', emoji: '📱', price: 150, description: 'Latest Apple flagship smartphone with titanium design and A17 Pro chip.', stock: 50 },
+    { id: 'p2', name: 'Samsung 4K Smart TV', category: 'Electronics', emoji: '📺', price: 200, description: '65-inch 4K QLED Smart TV with HDR and built-in streaming apps.', stock: 30 },
+    { id: 'p3', name: 'Nike Air Max 270', category: 'Fashion', emoji: '👟', price: 80, description: 'Premium running shoes with Max Air cushioning for all-day comfort.', stock: 100 },
+    { id: 'p4', name: 'MacBook Pro M3', category: 'Electronics', emoji: '💻', price: 300, description: 'Powerful laptop with M3 chip, 16GB RAM and stunning Liquid Retina display.', stock: 20 },
+    { id: 'p5', name: 'Sony WH-1000XM5', category: 'Electronics', emoji: '🎧', price: 60, description: 'Industry-leading noise cancelling headphones with 30-hour battery life.', stock: 75 },
+    { id: 'p6', name: 'Adidas Ultraboost', category: 'Fashion', emoji: '👟', price: 90, description: 'High-performance running shoes with Boost midsole technology.', stock: 80 },
+    { id: 'p7', name: 'Rolex Submariner', category: 'Watches', emoji: '⌚', price: 500, description: 'Iconic luxury dive watch with ceramic bezel and Oystersteel bracelet.', stock: 10 },
+    { id: 'p8', name: 'PlayStation 5', category: 'Gaming', emoji: '🎮', price: 120, description: 'Next-gen gaming console with ultra-high speed SSD and DualSense controller.', stock: 40 },
+    { id: 'p9', name: 'iPad Pro 12.9"', category: 'Electronics', emoji: '📲', price: 180, description: 'Powerful tablet with M2 chip, ProMotion display, and all-day battery.', stock: 35 },
+    { id: 'p10', name: 'Louis Vuitton Bag', category: 'Fashion', emoji: '👜', price: 250, description: 'Iconic luxury handbag crafted from premium Monogram canvas.', stock: 15 },
+    { id: 'p11', name: 'DJI Mini 4 Pro', category: 'Electronics', emoji: '🚁', price: 100, description: 'Compact drone with 4K/60fps video, obstacle avoidance, and 34-min flight time.', stock: 25 },
+    { id: 'p12', name: 'Gaming Chair', category: 'Furniture', emoji: '🪑', price: 70, description: 'Ergonomic gaming chair with lumbar support and 4D armrests.', stock: 60 },
+  ],
+  deposits: [],
+  purchases: [],
+  withdrawals: [],
+  sessions: {},
+  // ---- NEW ----
+  pendingRegistrations: [],   // registration requests awaiting admin approval
+  referralCodes: [
+    { code: 'SHOP2024', usedBy: null, createdAt: Date.now(), isActive: true },
+    { code: 'WELCOME1', usedBy: null, createdAt: Date.now(), isActive: true },
+    { code: 'CHAIN999', usedBy: null, createdAt: Date.now(), isActive: true },
+  ],
+  siteSettings: JSON.parse(JSON.stringify(defaultSettings))
+};
+
+// ---- DB Functions ----
+function getDB() {
+  const raw = localStorage.getItem(DB_KEY);
+  if (!raw) {
+    localStorage.setItem(DB_KEY, JSON.stringify(defaultDB));
+    return JSON.parse(JSON.stringify(defaultDB));
+  }
+  const db = JSON.parse(raw);
+  if (!db.products || db.products.length === 0) db.products = defaultDB.products;
+  if (!db.pendingRegistrations) db.pendingRegistrations = [];
+  if (!db.referralCodes) db.referralCodes = defaultDB.referralCodes;
+  if (!db.siteSettings) db.siteSettings = JSON.parse(JSON.stringify(defaultSettings));
+  if (!db.siteSettings.wallets) db.siteSettings.wallets = JSON.parse(JSON.stringify(defaultSettings.wallets));
+  return db;
+}
+
+// ---- Settings Helpers ----
+function getSettings() {
+  return getDB().siteSettings;
+}
+
+function saveSettings(settings) {
+  const db = getDB();
+  db.siteSettings = settings;
+  saveDB(db);
+}
+
+function getWalletAddress(crypto) {
+  const db = getDB();
+  const w = db.siteSettings && db.siteSettings.wallets && db.siteSettings.wallets[crypto];
+  return w ? w.address : '';
+}
+
+function getEnabledWallets() {
+  const db = getDB();
+  const wallets = (db.siteSettings && db.siteSettings.wallets) || {};
+  return Object.entries(wallets)
+    .filter(([, w]) => w.enabled && w.address)
+    .map(([key, w]) => ({ key, ...w }));
+}
+
+function saveDB(db) {
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+}
+
+// ---- Auth Functions ----
+function getCurrentUser() {
+  const sessionId = localStorage.getItem('session_id');
+  if (!sessionId) return null;
+  const db = getDB();
+  const userId = db.sessions[sessionId];
+  if (!userId) return null;
+  return db.users.find(u => u.id === userId) || null;
+}
+
+function login(email, password) {
+  const db = getDB();
+  const user = db.users.find(u => u.email === email && u.password === password);
+  if (!user) return { success: false, message: 'Invalid email or password!' };
+
+  // Check if there's a pending registration for this email
+  const pending = db.pendingRegistrations.find(r => r.email === email && r.status === 'pending');
+  if (pending) return { success: false, message: 'Your account is pending admin approval. Please wait.' };
+
+  const rejected = db.pendingRegistrations.find(r => r.email === email && r.status === 'rejected');
+  if (rejected && !db.users.find(u => u.email === email && u.role !== 'admin')) {
+    return { success: false, message: 'Your registration was rejected by admin.' };
+  }
+
+  const sessionId = 'sess_' + Math.random().toString(36).substr(2, 16);
+  db.sessions[sessionId] = user.id;
+  saveDB(db);
+  localStorage.setItem('session_id', sessionId);
+  return { success: true, user };
+}
+
+function logout() {
+  const sessionId = localStorage.getItem('session_id');
+  if (sessionId) {
+    const db = getDB();
+    delete db.sessions[sessionId];
+    saveDB(db);
+  }
+  localStorage.removeItem('session_id');
+  window.location.href = '/login.html';
+}
+
+// ---- Referral Code Functions ----
+function validateReferralCode(code) {
+  const db = getDB();
+  const ref = db.referralCodes.find(r => r.code.toUpperCase() === code.toUpperCase() && r.isActive);
+  if (!ref) return { valid: false, message: 'Invalid or expired referral code!' };
+  return { valid: true, ref };
+}
+
+function createReferralCode(code) {
+  const db = getDB();
+  const exists = db.referralCodes.find(r => r.code.toUpperCase() === code.toUpperCase());
+  if (exists) return { success: false, message: 'This referral code already exists!' };
+  db.referralCodes.push({
+    code: code.toUpperCase(),
+    usedBy: null,
+    createdAt: Date.now(),
+    isActive: true
+  });
+  saveDB(db);
+  return { success: true };
+}
+
+function deactivateReferralCode(code) {
+  const db = getDB();
+  const ref = db.referralCodes.find(r => r.code === code);
+  if (ref) { ref.isActive = false; saveDB(db); return true; }
+  return false;
+}
+
+// ---- Registration Request Functions ----
+function submitRegistration(name, email, password, referralCode) {
+  const db = getDB();
+
+  // Check referral code
+  const refCheck = validateReferralCode(referralCode);
+  if (!refCheck.valid) return { success: false, message: refCheck.message };
+
+  // Check if email already exists in users
+  if (db.users.find(u => u.email === email)) {
+    return { success: false, message: 'An account with this email already exists!' };
+  }
+
+  // Check if already has a pending request
+  const existingPending = db.pendingRegistrations.find(r => r.email === email && r.status === 'pending');
+  if (existingPending) {
+    return { success: false, message: 'You already have a pending registration request!' };
+  }
+
+  const regRequest = {
+    id: 'reg_' + Math.random().toString(36).substr(2, 9),
+    name,
+    email,
+    password, // stored temporarily; in production, hash this
+    referralCode: referralCode.toUpperCase(),
+    status: 'pending',
+    createdAt: Date.now()
+  };
+
+  db.pendingRegistrations.push(regRequest);
+  saveDB(db);
+  return { success: true, regRequest };
+}
+
+function approveRegistration(regId) {
+  const db = getDB();
+  const reg = db.pendingRegistrations.find(r => r.id === regId);
+  if (!reg || reg.status !== 'pending') return false;
+
+  // Create the actual user account
+  const user = {
+    id: 'u_' + Math.random().toString(36).substr(2, 9),
+    name: reg.name,
+    email: reg.email,
+    password: reg.password,
+    role: 'user',
+    balance: 0,
+    referralCode: reg.referralCode,
+    createdAt: Date.now()
+  };
+  db.users.push(user);
+
+  // Mark referral code as used (mark it but keep it active for reuse if desired)
+  const refCode = db.referralCodes.find(r => r.code === reg.referralCode);
+  if (refCode) {
+    refCode.usedCount = (refCode.usedCount || 0) + 1;
+  }
+
+  reg.status = 'approved';
+  reg.approvedAt = Date.now();
+  saveDB(db);
+  return true;
+}
+
+function rejectRegistration(regId) {
+  const db = getDB();
+  const reg = db.pendingRegistrations.find(r => r.id === regId);
+  if (!reg) return false;
+  reg.status = 'rejected';
+  reg.rejectedAt = Date.now();
+  saveDB(db);
+  return true;
+}
+
+// ---- Deposit Functions ----
+function submitDeposit(userId, amount, crypto, txid) {
+  const db = getDB();
+  const deposit = {
+    id: 'dep_' + Math.random().toString(36).substr(2, 9),
+    userId, amount: parseFloat(amount), crypto, txid,
+    status: 'pending',
+    createdAt: Date.now()
+  };
+  db.deposits.push(deposit);
+  saveDB(db);
+  return deposit;
+}
+
+function approveDeposit(depositId) {
+  const db = getDB();
+  const deposit = db.deposits.find(d => d.id === depositId);
+  if (!deposit) return false;
+  deposit.status = 'approved';
+  deposit.approvedAt = Date.now();
+  const user = db.users.find(u => u.id === deposit.userId);
+  if (user) user.balance += deposit.amount;
+  saveDB(db);
+  return true;
+}
+
+function rejectDeposit(depositId) {
+  const db = getDB();
+  const deposit = db.deposits.find(d => d.id === depositId);
+  if (!deposit) return false;
+  deposit.status = 'rejected';
+  deposit.rejectedAt = Date.now();
+  saveDB(db);
+  return true;
+}
+
+// ---- Automated Blockchain Verification (BSC BEP20 / BNB) ----
+async function verifyBscTx(txHash, adminAddress, targetCrypto) {
+  const rpcUrl = 'https://bsc-dataseed.binance.org/';
+  
+  // Clean hash
+  txHash = txHash.trim();
+  if (!txHash.startsWith('0x')) {
+    txHash = '0x' + txHash;
+  }
+  
+  // 1. Fetch transaction details
+  const resTx = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'eth_getTransactionByHash',
+      params: [txHash]
+    })
+  });
+  const dataTx = await resTx.json();
+  if (dataTx.error) {
+    throw new Error(dataTx.error.message || 'Error fetching transaction.');
+  }
+  const tx = dataTx.result;
+  if (!tx) {
+    throw new Error('Transaction hash not found on Binance Smart Chain. Make sure it is a BSC transaction.');
+  }
+  
+  // 2. Fetch receipt to check status
+  const resRec = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'eth_getTransactionReceipt',
+      params: [txHash]
+    })
+  });
+  const dataRec = await resRec.json();
+  const receipt = dataRec.result;
+  if (!receipt) {
+    throw new Error('Transaction is still pending or not fully processed on the blockchain.');
+  }
+  if (receipt.status !== '0x1') {
+    throw new Error('Transaction failed on the blockchain.');
+  }
+
+  let amount = 0;
+  let parsedTo = '';
+
+  if (targetCrypto === 'USDT_BEP20') {
+    // BEP-20 USDT transfer
+    const usdtContract = '0x55d398326f99059ff775485246999027b3197955';
+    if (!tx.to || tx.to.toLowerCase() !== usdtContract.toLowerCase()) {
+      throw new Error('This transaction is not a BEP-20 USDT token transfer.');
+    }
+    
+    const input = tx.input;
+    // transfer method signature: 0xa9059cbb
+    if (!input || !input.startsWith('0xa9059cbb')) {
+      throw new Error('Not a valid BEP-20 USDT transfer transaction.');
+    }
+    
+    // Parse target address: chars 34 to 74 (40 chars)
+    parsedTo = '0x' + input.substring(34, 74).toLowerCase();
+    
+    // Parse amount: chars 74 to end
+    const amountHex = input.substring(74);
+    const rawAmount = BigInt('0x' + amountHex);
+    // USDT has 18 decimals on BSC
+    amount = Number(rawAmount) / 1e18;
+  } else {
+    throw new Error('Unsupported auto-verify cryptocurrency.');
+  }
+
+  // Compare destination address
+  if (parsedTo.toLowerCase() !== adminAddress.toLowerCase()) {
+    throw new Error(`Transaction recipient (${parsedTo.substring(0, 10)}...) does not match your admin deposit address.`);
+  }
+
+  if (amount <= 0) {
+    throw new Error('Transaction amount must be greater than 0.');
+  }
+
+  return {
+    amount,
+    from: tx.from,
+    to: parsedTo
+  };
+}
+
+// ---- Purchase Functions ----
+function buyProduct(userId, productId) {
+  const db = getDB();
+  const user = db.users.find(u => u.id === userId);
+  const product = db.products.find(p => p.id === productId);
+  if (!user || !product) return { success: false, message: 'Product not found!' };
+  if (user.balance < product.price) return { success: false, message: 'Insufficient balance!' };
+
+  const existing = db.purchases.find(p => p.userId === userId && p.productId === productId && p.status === 'holding');
+  if (existing) return { success: false, message: 'You are already holding this product!' };
+
+  user.balance -= product.price;
+  const purchase = {
+    id: 'pur_' + Math.random().toString(36).substr(2, 9),
+    userId, productId,
+    productName: product.name,
+    productEmoji: product.emoji,
+    buyPrice: product.price,
+    sellPrice: parseFloat((product.price * 1.5).toFixed(2)),
+    status: 'holding',
+    boughtAt: Date.now(),
+    canSellAt: Date.now() + (12 * 60 * 60 * 1000)
+  };
+  db.purchases.push(purchase);
+  saveDB(db);
+  return { success: true, purchase };
+}
+
+function sellProduct(purchaseId, userId) {
+  const db = getDB();
+  const purchase = db.purchases.find(p => p.id === purchaseId && p.userId === userId);
+  if (!purchase) return { success: false, message: 'Purchase not found!' };
+  if (purchase.status !== 'holding') return { success: false, message: 'This product is not eligible for sale!' };
+  if (Date.now() < purchase.canSellAt) {
+    const remaining = purchase.canSellAt - Date.now();
+    const hrs = Math.floor(remaining / 3600000);
+    const mins = Math.floor((remaining % 3600000) / 60000);
+    return { success: false, message: `Please wait ${hrs}h ${mins}m more before selling!` };
+  }
+  purchase.status = 'sold';
+  purchase.soldAt = Date.now();
+  const user = db.users.find(u => u.id === userId);
+  if (user) user.balance += purchase.sellPrice;
+  saveDB(db);
+  return { success: true, profit: purchase.sellPrice - purchase.buyPrice };
+}
+
+// ---- Withdraw Functions ----
+function submitWithdraw(userId, amount, walletAddress, crypto) {
+  const db = getDB();
+  const user = db.users.find(u => u.id === userId);
+  if (!user) return { success: false, message: 'User not found!' };
+  if (user.balance < amount) return { success: false, message: 'Insufficient balance!' };
+
+  user.balance -= amount;
+  const withdrawal = {
+    id: 'wtd_' + Math.random().toString(36).substr(2, 9),
+    userId, userName: user.name,
+    amount: parseFloat(amount), crypto, walletAddress,
+    status: 'pending',
+    createdAt: Date.now()
+  };
+  db.withdrawals.push(withdrawal);
+  saveDB(db);
+  return { success: true, withdrawal };
+}
+
+function approveWithdraw(withdrawalId) {
+  const db = getDB();
+  const w = db.withdrawals.find(w => w.id === withdrawalId);
+  if (!w) return false;
+  w.status = 'approved';
+  w.approvedAt = Date.now();
+  saveDB(db);
+  return true;
+}
+
+function rejectWithdraw(withdrawalId) {
+  const db = getDB();
+  const w = db.withdrawals.find(w => w.id === withdrawalId);
+  if (!w) return false;
+  const user = db.users.find(u => u.id === w.userId);
+  if (user) user.balance += w.amount;
+  w.status = 'rejected';
+  w.rejectedAt = Date.now();
+  saveDB(db);
+  return true;
+}
+
+// ---- UI Helpers ----
+function showToast(message, type = 'info') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type === 'error' ? 'error' : type === 'success' ? 'success' : 'info'}`;
+  toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${message}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = 'slideIn 0.3s ease reverse';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+function formatMoney(amount) {
+  return '$' + parseFloat(amount).toFixed(2);
+}
+
+function formatDate(ts) {
+  return new Date(ts).toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function requireAuth(adminRequired = false) {
+  const user = getCurrentUser();
+  if (!user) { window.location.href = '/login.html'; return null; }
+  if (adminRequired && user.role !== 'admin') { window.location.href = '/index.html'; return null; }
+  return user;
+}
+
+// ---- UI Theme Utilities ----
+function initTheme() {
+  const currentTheme = localStorage.getItem('theme') || 'dark';
+  if (currentTheme === 'light') {
+    document.body.classList.add('light-theme');
+  } else {
+    document.body.classList.remove('light-theme');
+  }
+}
+
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light-theme');
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.innerHTML = isLight ? '🌙' : '☀️';
+}
+
+// Auto-run theme initialization
+initTheme();
+
+function updateNavBar(user) {
+  const navRight = document.getElementById('nav-right');
+  if (!navRight) return;
+  
+  const isLight = document.body.classList.contains('light-theme');
+  const themeBtn = `<button id="theme-toggle-btn" class="nav-btn nav-btn-ghost" style="padding: 8px 12px; font-size: 16px; border-radius: 50%; width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center;" onclick="toggleTheme()">${isLight ? '🌙' : '☀️'}</button>`;
+
+  if (user) {
+    navRight.innerHTML = `
+      ${themeBtn}
+      <div class="balance-badge">💰 ${formatMoney(user.balance)}</div>
+      ${user.role === 'admin' ? '<a href="/admin/index.html" class="nav-btn nav-btn-ghost">🛠️ Admin</a>' : ''}
+      <a href="/dashboard.html" class="nav-btn nav-btn-ghost">👤 ${user.name}</a>
+      <button onclick="logout()" class="nav-btn nav-btn-ghost">Logout</button>
+    `;
+  } else {
+    navRight.innerHTML = `
+      ${themeBtn}
+      <a href="/login.html" class="nav-btn nav-btn-ghost">Login</a>
+      <a href="/register.html" class="nav-btn nav-btn-primary">Register</a>
+    `;
+  }
+}
+
+function startCountdown(elementId, targetTs, onComplete) {
+  function update() {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const remaining = targetTs - Date.now();
+    if (remaining <= 0) {
+      el.innerHTML = '<span class="timer-badge ready">✅ Ready to Sell</span>';
+      if (onComplete) onComplete();
+      return;
+    }
+    const h = Math.floor(remaining / 3600000);
+    const m = Math.floor((remaining % 3600000) / 60000);
+    const s = Math.floor((remaining % 60000) / 1000);
+    el.innerHTML = `
+      <div class="timer-badge running">
+        ⏰
+        <div class="countdown">
+          <div class="countdown-block"><div class="countdown-num">${String(h).padStart(2,'0')}</div><div class="countdown-label">HRS</div></div>
+          <span style="color:var(--primary)">:</span>
+          <div class="countdown-block"><div class="countdown-num">${String(m).padStart(2,'0')}</div><div class="countdown-label">MIN</div></div>
+          <span style="color:var(--primary)">:</span>
+          <div class="countdown-block"><div class="countdown-num">${String(s).padStart(2,'0')}</div><div class="countdown-label">SEC</div></div>
+        </div>
+      </div>`;
+    setTimeout(update, 1000);
+  }
+  update();
+}

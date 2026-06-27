@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management — ShopChain Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .admin-nav { background: rgba(239,68,68,0.08); border-bottom: 1px solid rgba(239,68,68,0.2); padding: 8px 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--danger); position: sticky; top: 70px; z-index: 100; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/admin/index.html" class="navbar-brand">
+    <div class="logo-icon" style="background:linear-gradient(135deg,#ef4444,#dc2626);">A</div>
+    <div class="logo-text" style="background:linear-gradient(135deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">ShopChain Admin</div>
+  </a>
+  <div class="navbar-right" id="nav-right"></div>
+</nav>
+<div class="admin-nav">🛠️ <strong>Admin Panel</strong> — User Management</div>
+
+<div class="page-layout">
+  <aside class="sidebar">
+    <div class="sidebar-menu">
+      <a href="/admin/index.html" class="sidebar-item"><span class="icon">📊</span> Dashboard</a>
+      <a href="/admin/registrations.html" class="sidebar-item"><span class="icon">📝</span> Registrations</a>
+      <a href="/admin/deposits.html" class="sidebar-item"><span class="icon">💰</span> Deposits</a>
+      <a href="/admin/withdrawals.html" class="sidebar-item"><span class="icon">💸</span> Withdrawals</a>
+      <a href="/admin/users.html" class="sidebar-item active"><span class="icon">👥</span> Users</a>
+      <a href="/admin/settings.html" class="sidebar-item"><span class="icon">⚙️</span> Settings</a>
+      <div style="height:1px;background:var(--border);margin:8px 0;"></div>
+      <a href="/index.html" class="sidebar-item"><span class="icon">🌐</span> Main Site</a>
+      <a href="#" onclick="logout()" class="sidebar-item" style="color:var(--danger);margin-top:4px;"><span class="icon">🚪</span> Logout</a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="page-header">
+      <h1>👥 User Management</h1>
+      <p>View and manage all registered users and their balances</p>
+    </div>
+
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px;">
+      <div class="stat-card" style="border-left:4px solid var(--info);">
+        <div class="stat-label">Total Users</div>
+        <div class="stat-value blue" id="s-total">0</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--success);">
+        <div class="stat-label">Total Balance</div>
+        <div class="stat-value green" id="s-balance">$0</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--primary);">
+        <div class="stat-label">Total Purchases</div>
+        <div class="stat-value orange" id="s-purchases">0</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid #8b5cf6;">
+        <div class="stat-label">Total Sales</div>
+        <div class="stat-value" style="color:#8b5cf6;" id="s-sells">0</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div class="search-box" style="max-width:400px;">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="user-search" class="form-control" placeholder="Search by name or email..." oninput="renderUsers()" style="border-radius:50px;padding-left:44px;">
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Balance</th>
+            <th>Active Products</th>
+            <th>Total Bought</th>
+            <th>Total Sold</th>
+            <th>Total Deposited</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- User Detail Modal -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-user-title">User Details</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- Balance Modal -->
+<div class="modal-overlay" id="balance-modal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">💰 Adjust Balance</div>
+      <button class="modal-close" onclick="closeBalanceModal()">✕</button>
+    </div>
+    <div id="balance-modal-content"></div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  window.onload = function () {
+    const user = requireAuth(true);
+    if (!user) return;
+    updateNavBar(user);
+    renderUsers();
+  };
+
+  function renderUsers() {
+    const db = getDB();
+    const searchQ = (document.getElementById('user-search').value || '').toLowerCase();
+    let users = db.users.filter(u => u.role !== 'admin');
+
+    if (searchQ) users = users.filter(u => u.name.toLowerCase().includes(searchQ) || u.email.toLowerCase().includes(searchQ));
+
+    const allPurchases = db.purchases;
+    document.getElementById('s-total').textContent = users.length;
+    document.getElementById('s-balance').textContent = formatMoney(users.reduce((s, u) => s + u.balance, 0));
+    document.getElementById('s-purchases').textContent = allPurchases.length;
+    document.getElementById('s-sells').textContent = allPurchases.filter(p => p.status === 'sold').length;
+
+    const tbody = document.getElementById('users-tbody');
+    if (users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">No users found</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = users.map(u => {
+      const uPurchases = db.purchases.filter(p => p.userId === u.id);
+      const activePurchases = uPurchases.filter(p => p.status === 'holding').length;
+      const totalDep = db.deposits.filter(d => d.userId === u.id && d.status === 'approved').reduce((s, d) => s + d.amount, 0);
+
+      return `<tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:white;flex-shrink:0;">${u.name.charAt(0).toUpperCase()}</div>
+            <div>
+              <div style="font-weight:600;font-size:14px;">${u.name}</div>
+              <div style="font-size:12px;color:var(--text-muted);">${u.email}</div>
+            </div>
+          </div>
+        </td>
+        <td style="font-weight:800;color:var(--success);font-size:15px;">${formatMoney(u.balance)}</td>
+        <td style="text-align:center;"><span class="badge ${activePurchases > 0 ? 'badge-orange' : 'badge-info'}">${activePurchases}</span></td>
+        <td style="text-align:center;font-weight:600;">${uPurchases.length}</td>
+        <td style="text-align:center;font-weight:600;">${uPurchases.filter(p => p.status === 'sold').length}</td>
+        <td style="font-weight:600;color:var(--info);">${formatMoney(totalDep)}</td>
+        <td style="font-size:12px;color:var(--text-secondary);">${formatDate(u.createdAt)}</td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-outline btn-sm" onclick="showUserDetail('${u.id}')">🔍 View</button>
+            <button class="btn btn-primary btn-sm" onclick="showBalanceModal('${u.id}')">💰 Balance</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function showUserDetail(userId) {
+    const db = getDB();
+    const u = db.users.find(x => x.id === userId);
+    if (!u) return;
+    const uPurchases = db.purchases.filter(p => p.userId === u.id);
+    const uDeposits = db.deposits.filter(d => d.userId === u.id);
+    const uWithdrawals = db.withdrawals.filter(w => w.userId === u.id);
+    const totalDep = uDeposits.filter(d => d.status === 'approved').reduce((s, d) => s + d.amount, 0);
+    const totalWtd = uWithdrawals.filter(w => w.status === 'approved').reduce((s, w) => s + w.amount, 0);
+    const totalProfit = uPurchases.filter(p => p.status === 'sold').reduce((s, p) => s + (p.sellPrice - p.buyPrice), 0);
+
+    document.getElementById('modal-user-title').textContent = u.name + ' — Details';
+    document.getElementById('modal-content').innerHTML = `
+      <div style="display:grid;gap:16px;">
+        <div style="text-align:center;padding:16px 0;">
+          <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:32px;color:white;margin:0 auto 12px;">${u.name.charAt(0).toUpperCase()}</div>
+          <div style="font-size:20px;font-weight:800;">${u.name}</div>
+          <div style="font-size:14px;color:var(--text-secondary);">${u.email}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">Current Balance</div>
+            <div style="font-size:22px;font-weight:800;color:var(--success);">${formatMoney(u.balance)}</div>
+          </div>
+          <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">Total Profit</div>
+            <div style="font-size:22px;font-weight:800;color:var(--info);">${formatMoney(totalProfit)}</div>
+          </div>
+          <div style="background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">Total Deposited</div>
+            <div style="font-size:22px;font-weight:800;color:var(--primary);">${formatMoney(totalDep)}</div>
+          </div>
+          <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">Total Withdrawn</div>
+            <div style="font-size:22px;font-weight:800;color:var(--danger);">${formatMoney(totalWtd)}</div>
+          </div>
+        </div>
+        <div style="display:grid;gap:8px;font-size:14px;">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-secondary);">Total Purchases</span><strong>${uPurchases.length}</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-secondary);">Total Sales</span><strong>${uPurchases.filter(p=>p.status==='sold').length}</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-secondary);">Active Products</span><strong>${uPurchases.filter(p=>p.status==='holding').length}</strong></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;"><span style="color:var(--text-secondary);">Joined</span><strong>${formatDate(u.createdAt)}</strong></div>
+        </div>
+        <button class="btn btn-primary" onclick="closeModal();showBalanceModal('${u.id}')">💰 Adjust Balance</button>
+      </div>`;
+
+    document.getElementById('user-modal').classList.add('active');
+  }
+
+  function showBalanceModal(userId) {
+    const db = getDB();
+    const u = db.users.find(x => x.id === userId);
+    if (!u) return;
+
+    document.getElementById('balance-modal-content').innerHTML = `
+      <div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:16px;margin-bottom:20px;text-align:center;">
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px;">${u.name}'s Current Balance</div>
+          <div style="font-size:32px;font-weight:900;color:var(--success);">${formatMoney(u.balance)}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Select Action</label>
+          <select id="bal-action" class="form-control">
+            <option value="add">➕ Add Balance</option>
+            <option value="deduct">➖ Deduct Balance</option>
+            <option value="set">📌 Set to Exact Amount</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Amount (USD)</label>
+          <input type="number" id="bal-amount" class="form-control" placeholder="Enter amount" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reason (optional)</label>
+          <input type="text" id="bal-reason" class="form-control" placeholder="e.g. Bonus, Correction...">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <button class="btn btn-outline" onclick="closeBalanceModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="adjustBalance('${userId}')">✅ Apply</button>
+        </div>
+      </div>`;
+
+    document.getElementById('balance-modal').classList.add('active');
+  }
+
+  function adjustBalance(userId) {
+    const db = getDB();
+    const u = db.users.find(x => x.id === userId);
+    if (!u) return;
+    const action = document.getElementById('bal-action').value;
+    const amount = parseFloat(document.getElementById('bal-amount').value);
+
+    if (isNaN(amount) || amount < 0) { showToast('❌ Please enter a valid amount!', 'error'); return; }
+
+    if (action === 'add') {
+      u.balance += amount;
+      showToast(`✅ Added ${formatMoney(amount)}! New balance: ${formatMoney(u.balance)}`, 'success');
+    } else if (action === 'deduct') {
+      if (amount > u.balance) { showToast('❌ Insufficient balance to deduct!', 'error'); return; }
+      u.balance -= amount;
+      showToast(`✅ Deducted ${formatMoney(amount)}! New balance: ${formatMoney(u.balance)}`, 'success');
+    } else {
+      u.balance = amount;
+      showToast(`✅ Balance set to ${formatMoney(amount)}!`, 'success');
+    }
+
+    saveDB(db);
+    closeBalanceModal();
+    renderUsers();
+  }
+
+  function closeModal() { document.getElementById('user-modal').classList.remove('active'); }
+  function closeBalanceModal() { document.getElementById('balance-modal').classList.remove('active'); }
+
+  document.getElementById('user-modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+  document.getElementById('balance-modal').addEventListener('click', function(e) { if (e.target === this) closeBalanceModal(); });
+</script>
+</body>
+</html>

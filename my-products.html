@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Products — ShopChain</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar">
+  <a href="/index.html" class="navbar-brand">
+    <div class="logo-icon">S</div>
+    <div class="logo-text">ShopChain</div>
+  </a>
+  <div class="navbar-right" id="nav-right"></div>
+</nav>
+
+<div class="page-layout">
+  <aside class="sidebar">
+    <div class="sidebar-menu">
+      <a href="/dashboard.html" class="sidebar-item"><span class="icon">📊</span> Dashboard</a>
+      <a href="/deposit.html" class="sidebar-item"><span class="icon">💰</span> Deposit</a>
+      <a href="/my-products.html" class="sidebar-item active"><span class="icon">📦</span> My Products</a>
+      <a href="/withdraw.html" class="sidebar-item"><span class="icon">💸</span> Withdraw</a>
+      <a href="/index.html" class="sidebar-item"><span class="icon">🛒</span> Marketplace</a>
+      <a href="#" onclick="logout()" class="sidebar-item" style="color:var(--danger);margin-top:8px;"><span class="icon">🚪</span> Logout</a>
+    </div>
+    <div class="glass-card" style="margin-top:16px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text-secondary);">Summary</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
+        <span style="color:var(--text-secondary);">Active</span>
+        <span id="side-active" style="font-weight:700;color:var(--primary);">0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
+        <span style="color:var(--text-secondary);">Ready to Sell</span>
+        <span id="side-ready" style="font-weight:700;color:var(--success);">0</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;">
+        <span style="color:var(--text-secondary);">Sold</span>
+        <span id="side-sold" style="font-weight:700;">0</span>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="page-header">
+      <h1>📦 My Products</h1>
+      <p>Track your purchased products and sell timers</p>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:24px;">
+      <button class="chip active" id="tab-holding" onclick="switchTab('holding', this)">⏳ Active Products</button>
+      <button class="chip" id="tab-sold" onclick="switchTab('sold', this)">✅ Sold Products</button>
+    </div>
+
+    <div id="panel-holding">
+      <div id="holding-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;"></div>
+    </div>
+
+    <div id="panel-sold" style="display:none;">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Buy Price</th>
+              <th>Sell Price</th>
+              <th>Profit</th>
+              <th>Sold Date</th>
+            </tr>
+          </thead>
+          <tbody id="sold-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Sell Confirm Modal -->
+<div class="modal-overlay" id="sell-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Sell Product</div>
+      <button class="modal-close" onclick="closeSellModal()">✕</button>
+    </div>
+    <div id="sell-modal-body"></div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  let currentUser;
+  let currentTab = 'holding';
+  let pendingSellId = null;
+
+  window.onload = function () {
+    currentUser = requireAuth();
+    if (!currentUser) return;
+    updateNavBar(currentUser);
+    renderProducts();
+  };
+
+  function switchTab(tab, btn) {
+    currentTab = tab;
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-holding').style.display = tab === 'holding' ? 'block' : 'none';
+    document.getElementById('panel-sold').style.display = tab === 'sold' ? 'block' : 'none';
+    renderProducts();
+  }
+
+  function renderProducts() {
+    const db = getDB();
+    const purchases = db.purchases.filter(p => p.userId === currentUser.id);
+    const holding = purchases.filter(p => p.status === 'holding');
+    const sold = purchases.filter(p => p.status === 'sold');
+
+    const readyToSell = holding.filter(p => Date.now() >= p.canSellAt);
+    document.getElementById('side-active').textContent = holding.length;
+    document.getElementById('side-ready').textContent = readyToSell.length;
+    document.getElementById('side-sold').textContent = sold.length;
+
+    if (currentTab === 'holding') renderHolding(holding);
+    else renderSold(sold);
+  }
+
+  function renderHolding(items) {
+    const grid = document.getElementById('holding-grid');
+    if (items.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1">
+          <div class="empty-icon">📦</div>
+          <h3>No active products</h3>
+          <p>Buy products from the marketplace to get started</p>
+          <a href="/index.html" class="btn btn-primary" style="width:auto;margin-top:16px;padding:10px 24px;">🛒 Browse Products</a>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = items.map(p => {
+      const isReady = Date.now() >= p.canSellAt;
+      return `
+        <div class="glass-card" style="position:relative;overflow:hidden;">
+          ${isReady ? '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--success),#16a34a);"></div>' : '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--primary),var(--accent));"></div>'}
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+            <div style="font-size:44px;width:64px;height:64px;background:rgba(255,255,255,0.05);border-radius:14px;display:flex;align-items:center;justify-content:center;">${p.productEmoji}</div>
+            <div>
+              <div style="font-weight:700;font-size:15px;margin-bottom:4px;">${p.productName}</div>
+              <div style="font-size:12px;color:var(--text-secondary);">Purchased: ${formatDate(p.boughtAt)}</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+            <div style="background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:10px;padding:10px;">
+              <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;">Buy Price</div>
+              <div style="font-size:18px;font-weight:800;color:var(--primary);">${formatMoney(p.buyPrice)}</div>
+            </div>
+            <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:10px;">
+              <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;">Sell Price</div>
+              <div style="font-size:18px;font-weight:800;color:var(--success);">${formatMoney(p.sellPrice)}</div>
+            </div>
+          </div>
+          <div style="margin-bottom:16px;text-align:center;" id="timer-${p.id}"></div>
+          <button
+            class="btn ${isReady ? 'btn-success' : 'btn-outline'}"
+            id="sell-btn-${p.id}"
+            onclick="showSellModal('${p.id}')"
+            ${isReady ? '' : 'disabled style="opacity:0.5;cursor:not-allowed;"'}
+          >
+            ${isReady ? '💰 Sell Now' : '⏳ Waiting...'}
+          </button>
+        </div>`;
+    }).join('');
+
+    items.forEach(p => {
+      startCountdown(`timer-${p.id}`, p.canSellAt, () => {
+        const btn = document.getElementById(`sell-btn-${p.id}`);
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+          btn.className = 'btn btn-success';
+          btn.textContent = '💰 Sell Now';
+        }
+      });
+    });
+  }
+
+  function renderSold(items) {
+    const tbody = document.getElementById('sold-tbody');
+    if (items.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:32px;">No products sold yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = items.sort((a, b) => b.soldAt - a.soldAt).map(p => `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:24px;">${p.productEmoji}</span>
+            <span style="font-weight:500;">${p.productName}</span>
+          </div>
+        </td>
+        <td style="color:var(--danger);font-weight:600;">${formatMoney(p.buyPrice)}</td>
+        <td style="color:var(--success);font-weight:600;">${formatMoney(p.sellPrice)}</td>
+        <td style="color:var(--success);font-weight:700;">+${formatMoney(p.sellPrice - p.buyPrice)}</td>
+        <td style="color:var(--text-secondary);font-size:13px;">${formatDate(p.soldAt)}</td>
+      </tr>
+    `).join('');
+  }
+
+  function showSellModal(purchaseId) {
+    const db = getDB();
+    const purchase = db.purchases.find(p => p.id === purchaseId);
+    if (!purchase) return;
+    pendingSellId = purchaseId;
+    const profit = purchase.sellPrice - purchase.buyPrice;
+
+    document.getElementById('sell-modal-body').innerHTML = `
+      <div style="text-align:center;padding:10px 0;">
+        <div style="font-size:60px;margin-bottom:12px;">${purchase.productEmoji}</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:20px;">${purchase.productName}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:24px;">
+          <div style="background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:10px;padding:12px;">
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;">Buy Price</div>
+            <div style="font-size:17px;font-weight:800;color:var(--primary);">${formatMoney(purchase.buyPrice)}</div>
+          </div>
+          <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:12px;">
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;">Sell Price</div>
+            <div style="font-size:17px;font-weight:800;color:var(--success);">${formatMoney(purchase.sellPrice)}</div>
+          </div>
+          <div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:12px;">
+            <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;">Profit</div>
+            <div style="font-size:17px;font-weight:800;color:var(--accent);">+${formatMoney(profit)}</div>
+          </div>
+        </div>
+        <div class="info-box success" style="margin-bottom:20px;">
+          🎉 After selling, <strong>${formatMoney(purchase.sellPrice)}</strong> will be added to your balance!
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <button class="btn btn-outline" onclick="closeSellModal()">Cancel</button>
+          <button class="btn btn-success" onclick="confirmSell()">✅ Confirm Sale</button>
+        </div>
+      </div>`;
+
+    document.getElementById('sell-modal').classList.add('active');
+  }
+
+  function closeSellModal() {
+    document.getElementById('sell-modal').classList.remove('active');
+    pendingSellId = null;
+  }
+
+  function confirmSell() {
+    if (!pendingSellId) return;
+    const result = sellProduct(pendingSellId, currentUser.id);
+    if (result.success) {
+      showToast(`🎉 Product sold! Profit: +${formatMoney(result.profit)}`, 'success');
+      closeSellModal();
+      currentUser = getCurrentUser();
+      updateNavBar(currentUser);
+      renderProducts();
+    } else {
+      showToast(result.message, 'error');
+    }
+  }
+
+  document.getElementById('sell-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeSellModal();
+  });
+</script>
+</body>
+</html>

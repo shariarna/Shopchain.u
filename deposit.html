@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deposit — ShopChain</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar">
+  <a href="/index.html" class="navbar-brand">
+    <div class="logo-icon">S</div>
+    <div class="logo-text">ShopChain</div>
+  </a>
+  <div class="navbar-right" id="nav-right"></div>
+</nav>
+
+<div class="page-layout">
+  <aside class="sidebar">
+    <div class="sidebar-menu">
+      <a href="/dashboard.html" class="sidebar-item"><span class="icon">📊</span> Dashboard</a>
+      <a href="/deposit.html" class="sidebar-item active"><span class="icon">💰</span> Deposit</a>
+      <a href="/my-products.html" class="sidebar-item"><span class="icon">📦</span> My Products</a>
+      <a href="/withdraw.html" class="sidebar-item"><span class="icon">💸</span> Withdraw</a>
+      <a href="/index.html" class="sidebar-item"><span class="icon">🛒</span> Marketplace</a>
+      <a href="#" onclick="logout()" class="sidebar-item" style="color:var(--danger);margin-top:8px;"><span class="icon">🚪</span> Logout</a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="page-header">
+      <h1>💰 USDT Deposit</h1>
+      <p>Automated real-time deposit via Binance Smart Chain (BSC BEP-20)</p>
+    </div>
+
+    <!-- No wallet configured yet -->
+    <div id="no-wallets-msg" style="display:none;">
+      <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:16px;padding:32px;text-align:center;">
+        <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+        <div style="font-size:18px;font-weight:700;color:var(--danger);margin-bottom:8px;">Deposits Temporarily Unavailable</div>
+        <div style="font-size:14px;color:var(--text-secondary);">Admin has not configured the USDT BEP20 wallet address yet. Please check back soon.</div>
+      </div>
+    </div>
+
+    <div id="deposit-content" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+
+      <!-- LEFT: Form -->
+      <div>
+        <!-- Step 1: Send to Wallet -->
+        <div class="glass-card" style="margin-bottom:20px;">
+          <div style="font-size:16px;font-weight:700;margin-bottom:16px;">Step 1: Send USDT to This Address</div>
+
+          <!-- QR placeholder -->
+          <div style="text-align:center;margin-bottom:16px;">
+            <div style="width:140px;height:140px;background:white;border-radius:12px;margin:0 auto;padding:10px;display:flex;align-items:center;justify-content:center;">
+              <div id="qr-display" style="width:120px;height:120px;background:white;position:relative;">
+                <svg viewBox="0 0 120 120" width="120" height="120">
+                  <rect width="120" height="120" fill="white"/>
+                  <rect x="10" y="10" width="40" height="40" fill="none" stroke="black" stroke-width="4"/>
+                  <rect x="15" y="15" width="30" height="30" fill="black"/>
+                  <rect x="70" y="10" width="40" height="40" fill="none" stroke="black" stroke-width="4"/>
+                  <rect x="75" y="15" width="30" height="30" fill="black"/>
+                  <rect x="10" y="70" width="40" height="40" fill="none" stroke="black" stroke-width="4"/>
+                  <rect x="15" y="75" width="30" height="30" fill="black"/>
+                  <rect x="65" y="65" width="10" height="10" fill="black"/>
+                  <rect x="80" y="65" width="10" height="10" fill="black"/>
+                  <rect x="95" y="65" width="10" height="10" fill="black"/>
+                  <rect x="65" y="80" width="10" height="10" fill="black"/>
+                  <rect x="95" y="80" width="10" height="10" fill="black"/>
+                  <rect x="65" y="95" width="10" height="10" fill="black"/>
+                  <rect x="80" y="95" width="10" height="10" fill="black"/>
+                  <rect x="95" y="95" width="10" height="10" fill="black"/>
+                </svg>
+              </div>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Scan QR or copy address below</div>
+          </div>
+
+          <div id="wallet-display">
+            <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">USDT BEP20 (Binance Smart Chain) Address:</div>
+            <div class="wallet-box">
+              <div class="wallet-addr" id="wallet-addr">Loading wallet address...</div>
+              <button class="copy-btn" onclick="copyAddress()" id="copy-btn" style="display:none;">📋 Copy</button>
+            </div>
+          </div>
+
+          <div class="info-box warning" style="margin-top:12px;">
+            ⚠️ Only send **USDT on Binance Smart Chain (BSC / BEP-20)** to this address. Sending other coins or using networks like Tron (TRC20) or Ethereum (ERC20) will result in permanent loss!
+          </div>
+        </div>
+
+        <!-- Step 2: Proof Form -->
+        <div class="glass-card">
+          <div style="font-size:16px;font-weight:700;margin-bottom:16px;">Step 2: Submit TxID for Verification</div>
+          <form id="deposit-form" onsubmit="handleDeposit(event)">
+            <div class="form-group" style="display:none;">
+              <!-- Kept input but hidden as amount is auto-read from chain -->
+              <input type="number" id="dep-amount" class="form-control" value="10">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">🔗 Transaction Hash (TxID)</label>
+              <input type="text" id="dep-txid" class="form-control" placeholder="Paste your 66-character TxID (e.g. 0x...)" required style="font-family:monospace;font-size:13px;">
+              <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Copy the TxID from your trust wallet, MetaMask or Binance withdrawal history</div>
+            </div>
+            
+            <div id="min-deposit-hint" style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;background:rgba(255,255,255,0.03);padding:8px 12px;border-radius:8px;border:1px solid var(--border);">
+              Minimum deposit: $10
+            </div>
+
+            <div class="info-box info" style="margin-bottom:20px;">
+              ⚡ Once submitted, our system scans the Binance Smart Chain blockchain instantly. Successful transactions credit your balance immediately!
+            </div>
+            
+            <button type="submit" class="btn btn-primary" id="dep-btn" style="font-size:16px;padding:14px;">
+              ⚡ Submit & Auto-Verify Instantly
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- RIGHT: Balance + Info -->
+      <div>
+        <div style="background:linear-gradient(135deg,#1e3a5f,#0a1628);border:1px solid rgba(249,115,22,0.3);border-radius:20px;padding:24px;margin-bottom:20px;">
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">Current Balance</div>
+          <div style="font-size:36px;font-weight:900;color:var(--primary);" id="current-balance">$0.00</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:8px;">💡 Add balance to buy products</div>
+        </div>
+
+        <div class="glass-card" style="margin-bottom:20px;">
+          <div style="font-size:15px;font-weight:700;margin-bottom:14px;">📋 How to Deposit?</div>
+          <div style="display:grid;gap:14px;">
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:white;flex-shrink:0;">1</div>
+              <div style="font-size:13px;color:var(--text-secondary);">Copy the BSC address or scan the QR code.</div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:white;flex-shrink:0;">2</div>
+              <div style="font-size:13px;color:var(--text-secondary);">Transfer USDT BEP20 to the copied address.</div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:white;flex-shrink:0;">3</div>
+              <div style="font-size:13px;color:var(--text-secondary);">Find the TxID in your wallet receipt and copy it.</div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:white;flex-shrink:0;">4</div>
+              <div style="font-size:13px;color:var(--text-secondary);">Paste the TxID in the form and click Verify. Your balance updates instantly!</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div style="font-size:16px;font-weight:700;margin-bottom:16px;">📋 Deposit History</div>
+          <div id="deposit-history"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  let currentUser;
+  let adminAddress = '';
+  let minDeposit = 10;
+
+  window.onload = function () {
+    currentUser = requireAuth();
+    if (!currentUser) return;
+    updateNavBar(currentUser);
+    document.getElementById('current-balance').textContent = formatMoney(currentUser.balance);
+    loadWallets();
+    renderDepositHistory();
+  };
+
+  function loadWallets() {
+    const db = getDB();
+    const settings = db.siteSettings || {};
+    const wallets = settings.wallets || {};
+    minDeposit = settings.minDeposit || 10;
+    
+    document.getElementById('min-deposit-hint').textContent = `Minimum deposit: $${minDeposit}`;
+
+    const usdtWallet = wallets.USDT_BEP20;
+    if (!usdtWallet || !usdtWallet.enabled || !usdtWallet.address) {
+      document.getElementById('no-wallets-msg').style.display = 'block';
+      document.getElementById('deposit-content').style.display = 'none';
+      return;
+    }
+
+    adminAddress = usdtWallet.address;
+    document.getElementById('wallet-addr').textContent = adminAddress;
+    document.getElementById('copy-btn').style.display = 'inline-block';
+  }
+
+  function copyAddress() {
+    if (!adminAddress) return;
+    navigator.clipboard.writeText(adminAddress).then(() => showToast('✅ Address copied to clipboard!', 'success'));
+  }
+
+  async function handleDeposit(e) {
+    e.preventDefault();
+    if (!adminAddress) { showToast('❌ Deposit address not configured yet!', 'error'); return; }
+
+    const txid = document.getElementById('dep-txid').value.trim();
+    const btn = document.getElementById('dep-btn');
+
+    if (txid.length < 8) { showToast('❌ Please enter a valid TxID!', 'error'); return; }
+
+    const db = getDB();
+    // Check for duplicate TxID
+    const duplicate = db.deposits.find(d => d.txid.toLowerCase() === txid.toLowerCase());
+    if (duplicate) {
+      showToast('❌ This Transaction ID has already been submitted!', 'error');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Verifying on Binance Smart Chain...';
+
+    try {
+      // Automatic Verification on Binance Smart Chain via RPC
+      const txResult = await verifyBscTx(txid, adminAddress, 'USDT_BEP20');
+      const actualAmount = txResult.amount;
+
+      if (actualAmount < minDeposit) {
+        throw new Error(`Transaction amount ($${actualAmount.toFixed(2)}) is less than the minimum deposit limit ($${minDeposit}).`);
+      }
+
+      // Add Deposit record (automatically approved)
+      const newDep = {
+        id: 'dep_' + Math.random().toString(36).substr(2, 9),
+        userId: currentUser.id,
+        amount: actualAmount,
+        crypto: 'USDT_BEP20',
+        txid: txid,
+        status: 'approved',
+        createdAt: Date.now(),
+        approvedAt: Date.now(),
+        autoVerified: true
+      };
+
+      const dbSave = getDB();
+      dbSave.deposits.push(newDep);
+
+      // Add balance to user
+      const u = dbSave.users.find(x => x.id === currentUser.id);
+      if (u) {
+        u.balance += actualAmount;
+      }
+      saveDB(dbSave);
+
+      showToast(`⚡ Transaction verified! ${formatMoney(actualAmount)} BEP20 USDT added to your balance instantly!`, 'success');
+      document.getElementById('deposit-form').reset();
+      
+      // Update UI state
+      currentUser = getCurrentUser();
+      document.getElementById('current-balance').textContent = formatMoney(currentUser.balance);
+      updateNavBar(currentUser);
+      renderDepositHistory();
+    } catch (err) {
+      showToast('❌ Auto-verification failed: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '⚡ Submit & Auto-Verify Instantly';
+    }
+  }
+
+  function renderDepositHistory() {
+    const db = getDB();
+    const deposits = db.deposits.filter(d => d.userId === currentUser.id).sort((a, b) => b.createdAt - a.createdAt);
+    const el = document.getElementById('deposit-history');
+
+    if (deposits.length === 0) {
+      el.innerHTML = `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon" style="font-size:40px;">📭</div><p style="font-size:13px;">No deposits yet</p></div>`;
+      return;
+    }
+
+    const statusMap = {
+      pending:  '<span class="badge badge-warning">⏳ Pending</span>',
+      approved: '<span class="badge badge-success">✅ Auto-Approved</span>',
+      rejected: '<span class="badge badge-danger">❌ Rejected</span>',
+    };
+
+    el.innerHTML = deposits.map(d => `
+      <div style="padding:14px 0;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div>
+            <span class="badge badge-info" style="margin-right:6px;">USDT BEP20</span>
+            <strong style="color:var(--success);font-size:15px;">+${formatMoney(d.amount)}</strong>
+          </div>
+          <div>${statusMap[d.status]}</div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);font-family:monospace;" title="${d.txid}">TxID: ${d.txid.substring(0, 28)}...</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${formatDate(d.createdAt)}</div>
+      </div>
+    `).join('');
+  }
+</script>
+</body>
+</html>

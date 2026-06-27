@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site Settings — ShopChain Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .admin-nav { background: rgba(239,68,68,0.08); border-bottom: 1px solid rgba(239,68,68,0.2); padding: 8px 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--danger); position: sticky; top: 70px; z-index: 100; }
+    .wallet-card { border-radius: 16px; padding: 24px; margin-bottom: 16px; position: relative; overflow: hidden; }
+    .wallet-card.usdt { background: linear-gradient(135deg, rgba(38,161,123,0.12), rgba(38,161,123,0.04)); border: 1px solid rgba(38,161,123,0.3); }
+    .wallet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .wallet-title { display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 800; }
+    .wallet-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content:center; font-size: 22px; }
+    .toggle-wrap { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-secondary); }
+    .toggle { position: relative; width: 44px; height: 24px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: rgba(255,255,255,0.1); border-radius: 24px; cursor: pointer; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); }
+    .toggle-slider:before { content: ''; position: absolute; height: 18px; width: 18px; left: 2px; bottom: 2px; background: #fff; border-radius: 50%; transition: 0.3s; }
+    .toggle input:checked + .toggle-slider { background: var(--success); border-color: var(--success); }
+    .toggle input:checked + .toggle-slider:before { transform: translateX(20px); }
+    .address-preview { font-family: monospace; font-size: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px 14px; word-break: break-all; color: var(--text-secondary); margin-top: 10px; min-height: 38px; border: 1px dashed rgba(255,255,255,0.08); display: flex; align-items: center; gap: 10px; }
+    .section-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 20px; padding: 28px; margin-bottom: 24px; }
+    .section-card h2 { font-size: 17px; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .input-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/admin/index.html" class="navbar-brand">
+    <div class="logo-icon" style="background:linear-gradient(135deg,#ef4444,#dc2626);">A</div>
+    <div class="logo-text" style="background:linear-gradient(135deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">ShopChain Admin</div>
+  </a>
+  <div class="navbar-right" id="nav-right"></div>
+</nav>
+<div class="admin-nav">🛠️ <strong>Admin Panel</strong> — Site Settings & Wallet Addresses</div>
+
+<div class="page-layout">
+  <aside class="sidebar">
+    <div class="sidebar-menu">
+      <a href="/admin/index.html" class="sidebar-item"><span class="icon">📊</span> Dashboard</a>
+      <a href="/admin/registrations.html" class="sidebar-item"><span class="icon">📝</span> Registrations</a>
+      <a href="/admin/deposits.html" class="sidebar-item"><span class="icon">💰</span> Deposits</a>
+      <a href="/admin/withdrawals.html" class="sidebar-item"><span class="icon">💸</span> Withdrawals</a>
+      <a href="/admin/users.html" class="sidebar-item"><span class="icon">👥</span> Users</a>
+      <a href="/admin/settings.html" class="sidebar-item active"><span class="icon">⚙️</span> Settings</a>
+      <div style="height:1px;background:var(--border);margin:8px 0;"></div>
+      <a href="/index.html" class="sidebar-item"><span class="icon">🌐</span> Main Site</a>
+      <a href="#" onclick="logout()" class="sidebar-item" style="color:var(--danger);margin-top:4px;"><span class="icon">🚪</span> Logout</a>
+    </div>
+    <div class="glass-card" style="margin-top:16px;border-color:rgba(34,197,94,0.3);">
+      <div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:8px;">✅ Active Wallet</div>
+      <div id="side-wallets" style="font-size:13px;color:var(--text-secondary);">Loading...</div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="page-header">
+      <h1>⚙️ Site Settings</h1>
+      <p>Configure your wallet addresses and platform rules</p>
+    </div>
+
+    <!-- ======= WALLET ADDRESSES ======= -->
+    <div class="section-card">
+      <h2>💳 Deposit Wallet Address</h2>
+      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:24px;margin-top:-12px;">
+        This is the address users will send USDT to. Make sure it is <strong style="color:var(--warning);">100% correct</strong>. BSC addresses will verify deposits <strong style="color:var(--success);">automatically</strong>!
+      </p>
+
+      <!-- USDT BEP20 -->
+      <div class="wallet-card usdt">
+        <div class="wallet-header">
+          <div class="wallet-title">
+            <div class="wallet-icon" style="background:rgba(38,161,123,0.2);">₮</div>
+            <div>
+              <div>USDT (BEP-20) <span style="font-size:11px;background:var(--success);color:#000;padding:2px 6px;border-radius:4px;font-weight:800;margin-left:6px;">⚡ AUTO VERIFY</span></div>
+              <div style="font-size:12px;font-weight:400;color:var(--text-secondary);">BSC (Binance Smart Chain Network)</div>
+            </div>
+          </div>
+          <div class="toggle-wrap">
+            <span>Enable</span>
+            <label class="toggle">
+              <input type="checkbox" id="usdt_bep20-enabled" checked onchange="updateSidebarWallets()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <label class="form-label">Your BSC (BEP-20) USDT Wallet Address</label>
+        <div class="input-row">
+          <input type="text" id="usdt_bep20-addr" class="form-control" placeholder="e.g. 0x742d35Cc6634C0532925a3b8D4C9C7b929a1b234" style="font-family:monospace;font-size:13px;" oninput="livePreview('usdt_bep20')">
+          <button class="btn btn-outline btn-sm" onclick="pasteClipboard('usdt_bep20-addr')">📋 Paste</button>
+        </div>
+        <div class="address-preview" id="usdt_bep20-preview">
+          <span style="color:var(--text-muted);">No address set yet</span>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:10px;">
+          <a id="usdt_bep20-explorer" href="#" target="_blank" style="font-size:12px;color:var(--info);text-decoration:none;display:none;">🔍 View on BscScan</a>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="saveWallets()" style="font-size:16px;padding:14px 32px;">
+        💾 Save Wallet Address
+      </button>
+    </div>
+
+    <!-- ======= PLATFORM RULES ======= -->
+    <div class="section-card">
+      <h2>📋 Platform Rules</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="form-group">
+          <label class="form-label">💵 Minimum Deposit (USD)</label>
+          <input type="number" id="min-deposit" class="form-control" min="1" step="1" placeholder="10">
+          <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Users cannot deposit less than this amount</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">💸 Minimum Withdrawal (USD)</label>
+          <input type="number" id="min-withdraw" class="form-control" min="1" step="1" placeholder="10">
+          <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Users cannot withdraw less than this amount</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">⏰ Hold Time (Hours)</label>
+          <input type="number" id="hold-hours" class="form-control" min="1" step="1" placeholder="12">
+          <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">How long users must hold a product before selling</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">📈 Profit Multiplier (x)</label>
+          <input type="number" id="profit-mult" class="form-control" min="1.01" step="0.01" placeholder="1.5">
+          <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Sell price = Buy price × this value (1.5 = 150%)</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveRules()" style="font-size:15px;padding:12px 28px;">
+        💾 Save Platform Rules
+      </button>
+    </div>
+
+    <!-- ======= VERIFY TxID ======= -->
+    <div class="section-card">
+      <h2>🔍 Verify Transaction (TxID Lookup)</h2>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;margin-top:-12px;">
+        Open BscScan to verify transaction details.
+      </p>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:flex-end;">
+        <div>
+          <label class="form-label">Transaction ID (TxID / Hash)</label>
+          <input type="text" id="verify-txid" class="form-control" placeholder="Paste the TxID from the deposit request..." style="font-family:monospace;">
+        </div>
+        <button class="btn btn-primary" onclick="verifyTx()" style="padding:12px 20px;white-space:nowrap;">🔍 Verify on BscScan</button>
+      </div>
+      <div id="verify-result" style="display:none;margin-top:16px;"></div>
+    </div>
+
+    <!-- ======= ADMIN CHANGE PASSWORD ======= -->
+    <div class="section-card">
+      <h2>🔐 Change Admin Password</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="form-group">
+          <label class="form-label">New Password</label>
+          <input type="password" id="new-pass" class="form-control" placeholder="New password (min 6 chars)" minlength="6">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm New Password</label>
+          <input type="password" id="confirm-pass" class="form-control" placeholder="Re-enter new password">
+        </div>
+      </div>
+      <button class="btn btn-danger" onclick="changeAdminPassword()" style="padding:12px 28px;">
+        🔐 Update Password
+      </button>
+    </div>
+
+  </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  let currentUser;
+
+  window.onload = function () {
+    currentUser = requireAuth(true);
+    if (!currentUser) return;
+    updateNavBar(currentUser);
+    loadSettings();
+  };
+
+  function loadSettings() {
+    const s = getSettings();
+    const wallets = s.wallets || {};
+
+    // Wallets
+    document.getElementById('usdt_bep20-addr').value = wallets.USDT_BEP20 ? wallets.USDT_BEP20.address : '';
+    document.getElementById('usdt_bep20-enabled').checked = wallets.USDT_BEP20 ? wallets.USDT_BEP20.enabled : true;
+
+    // Rules
+    document.getElementById('min-deposit').value  = s.minDeposit   || 10;
+    document.getElementById('min-withdraw').value = s.minWithdraw  || 10;
+    document.getElementById('hold-hours').value   = s.holdHours    || 12;
+    document.getElementById('profit-mult').value  = s.profitMultiplier || 1.5;
+
+    // Live previews
+    ['usdt_bep20'].forEach(livePreview);
+    updateSidebarWallets();
+  }
+
+  function livePreview(coin) {
+    const addr = document.getElementById(coin + '-addr').value.trim();
+    const preview = document.getElementById(coin + '-preview');
+    const explorerLink = document.getElementById(coin + '-explorer');
+
+    if (!addr) {
+      preview.innerHTML = '<span style="color:var(--text-muted);">No address set yet</span>';
+      if (explorerLink) explorerLink.style.display = 'none';
+      return;
+    }
+
+    preview.innerHTML = `
+      <span style="color:var(--text-primary);flex:1;">${addr}</span>
+      <button onclick="navigator.clipboard.writeText('${addr}').then(()=>showToast('Copied!','success'))"
+        style="background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.3);border-radius:6px;padding:3px 10px;color:var(--primary);font-size:11px;cursor:pointer;font-family:'Outfit',sans-serif;flex-shrink:0;">📋 Copy</button>`;
+
+    // Explorer links
+    if (explorerLink) {
+      explorerLink.style.display = 'inline';
+      if (coin === 'usdt_bep20') explorerLink.href = `https://bscscan.com/address/${addr}`;
+    }
+  }
+
+  function updateSidebarWallets() {
+    const el = document.getElementById('side-wallets');
+    const coins = [
+      { id: 'usdt_bep20', label: 'USDT BEP20', color: 'rgba(38,161,123,1)' }
+    ];
+    el.innerHTML = coins.map(c => {
+      const enabled = document.getElementById(c.id + '-enabled').checked;
+      const addr = document.getElementById(c.id + '-addr').value.trim();
+      return `<div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span>${c.label}</span>
+        <span style="color:${enabled && addr ? 'var(--success)' : 'var(--danger)'};">${enabled && addr ? '✅' : '❌'}</span>
+      </div>`;
+    }).join('');
+  }
+
+  async function pasteClipboard(inputId) {
+    try {
+      const text = await navigator.clipboard.readText();
+      document.getElementById(inputId).value = text;
+      const coin = inputId.replace('-addr', '');
+      livePreview(coin);
+      updateSidebarWallets();
+      showToast('✅ Address pasted from clipboard!', 'success');
+    } catch {
+      showToast('❌ Cannot access clipboard. Please paste manually.', 'error');
+    }
+  }
+
+  function saveWallets() {
+    const usdtBepAddr = document.getElementById('usdt_bep20-addr').value.trim();
+
+    if (!usdtBepAddr) {
+      showToast('⚠️ Please set the USDT BEP20 address!', 'warning');
+      return;
+    }
+
+    const db = getDB();
+    if (!db.siteSettings) db.siteSettings = {};
+    if (!db.siteSettings.wallets) db.siteSettings.wallets = {};
+
+    db.siteSettings.wallets.USDT_BEP20 = { address: usdtBepAddr, network: 'BSC (BEP20)', enabled: document.getElementById('usdt_bep20-enabled').checked, autoVerify: true };
+
+    saveDB(db);
+    updateSidebarWallets();
+    showToast('✅ Wallet address saved!', 'success');
+  }
+
+  function saveRules() {
+    const minDep   = parseFloat(document.getElementById('min-deposit').value);
+    const minWtd   = parseFloat(document.getElementById('min-withdraw').value);
+    const holdHrs  = parseFloat(document.getElementById('hold-hours').value);
+    const profMult = parseFloat(document.getElementById('profit-mult').value);
+
+    if ([minDep, minWtd, holdHrs, profMult].some(isNaN)) {
+      showToast('❌ Please enter valid numbers!', 'error'); return;
+    }
+    if (profMult <= 1) { showToast('❌ Profit multiplier must be greater than 1!', 'error'); return; }
+
+    const db = getDB();
+    db.siteSettings.minDeposit = minDep;
+    db.siteSettings.minWithdraw = minWtd;
+    db.siteSettings.holdHours = holdHrs;
+    db.siteSettings.profitMultiplier = profMult;
+    saveDB(db);
+    showToast('✅ Platform rules saved!', 'success');
+  }
+
+  function verifyTx() {
+    const txid = document.getElementById('verify-txid').value.trim();
+    const resultEl = document.getElementById('verify-result');
+
+    if (!txid) { showToast('❌ Please enter a TxID!', 'error'); return; }
+
+    const url = `https://bscscan.com/tx/${txid}`;
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `
+      <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:16px;">
+        <div style="font-weight:700;color:var(--info);margin-bottom:10px;">🔍 Verify on BscScan</div>
+        <div style="font-family:monospace;font-size:12px;background:rgba(0,0,0,0.2);padding:10px;border-radius:8px;word-break:break-all;margin-bottom:12px;">${txid}</div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
+          Click below to open BscScan and verify this transaction. Check that:
+          <br>✅ Amount matches what the user claimed
+          <br>✅ The receiving address is YOUR wallet address
+          <br>✅ Transaction status is Success
+        </p>
+        <a href="${url}" target="_blank" class="btn btn-primary" style="width:auto;display:inline-block;padding:10px 24px;text-decoration:none;">
+          🌐 Open on BscScan →
+        </a>
+      </div>`;
+  }
+
+  function changeAdminPassword() {
+    const newPass = document.getElementById('new-pass').value;
+    const confirm = document.getElementById('confirm-pass').value;
+
+    if (!newPass || newPass.length < 6) { showToast('❌ Password must be at least 6 characters!', 'error'); return; }
+    if (newPass !== confirm) { showToast('❌ Passwords do not match!', 'error'); return; }
+
+    const db = getDB();
+    const admin = db.users.find(u => u.role === 'admin');
+    if (admin) {
+      admin.password = newPass;
+      saveDB(db);
+      document.getElementById('new-pass').value = '';
+      document.getElementById('confirm-pass').value = '';
+      showToast('✅ Admin password changed successfully!', 'success');
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registration Requests — ShopChain Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .admin-nav { background: rgba(239,68,68,0.08); border-bottom: 1px solid rgba(239,68,68,0.2); padding: 8px 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--danger); position: sticky; top: 70px; z-index: 100; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/admin/index.html" class="navbar-brand">
+    <div class="logo-icon" style="background:linear-gradient(135deg,#ef4444,#dc2626);">A</div>
+    <div class="logo-text" style="background:linear-gradient(135deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">ShopChain Admin</div>
+  </a>
+  <div class="navbar-right" id="nav-right"></div>
+</nav>
+<div class="admin-nav">🛠️ <strong>Admin Panel</strong> — Registration Requests & Referral Codes</div>
+
+<div class="page-layout">
+  <aside class="sidebar">
+    <div class="sidebar-menu">
+      <a href="/admin/index.html" class="sidebar-item"><span class="icon">📊</span> Dashboard</a>
+      <a href="/admin/registrations.html" class="sidebar-item active"><span class="icon">📝</span> Registrations</a>
+      <a href="/admin/deposits.html" class="sidebar-item"><span class="icon">💰</span> Deposits</a>
+      <a href="/admin/withdrawals.html" class="sidebar-item"><span class="icon">💸</span> Withdrawals</a>
+      <a href="/admin/users.html" class="sidebar-item"><span class="icon">👥</span> Users</a>
+      <a href="/admin/settings.html" class="sidebar-item"><span class="icon">⚙️</span> Settings</a>
+      <div style="height:1px;background:var(--border);margin:8px 0;"></div>
+      <a href="/index.html" class="sidebar-item"><span class="icon">🌐</span> Main Site</a>
+      <a href="#" onclick="logout()" class="sidebar-item" style="color:var(--danger);margin-top:4px;"><span class="icon">🚪</span> Logout</a>
+    </div>
+
+    <!-- Pending count -->
+    <div class="glass-card" style="margin-top:16px;border-color:rgba(245,158,11,0.3);">
+      <div style="font-size:13px;font-weight:700;color:var(--warning);margin-bottom:8px;">⏳ Awaiting Approval</div>
+      <div style="font-size:28px;font-weight:900;color:var(--warning);" id="pending-count">0</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">registration requests</div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="page-header">
+      <h1>📝 Registration Management</h1>
+      <p>Review signup requests and manage referral codes</p>
+    </div>
+
+    <!-- TABS -->
+    <div style="display:flex;gap:8px;margin-bottom:24px;">
+      <button class="chip active" id="tab-regs" onclick="switchTab('registrations', this)">📝 Registration Requests</button>
+      <button class="chip" id="tab-refs" onclick="switchTab('referrals', this)">🎟️ Referral Codes</button>
+    </div>
+
+    <!-- ===== REGISTRATIONS PANEL ===== -->
+    <div id="panel-registrations">
+
+      <!-- Stats -->
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px;">
+        <div class="stat-card" style="border-left:4px solid var(--warning);">
+          <div class="stat-label">Pending</div>
+          <div class="stat-value" style="color:var(--warning);" id="reg-pending">0</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid var(--success);">
+          <div class="stat-label">Approved</div>
+          <div class="stat-value green" id="reg-approved">0</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid var(--danger);">
+          <div class="stat-label">Rejected</div>
+          <div class="stat-value" style="color:var(--danger);" id="reg-rejected">0</div>
+        </div>
+      </div>
+
+      <!-- Filter -->
+      <div style="display:flex;gap:8px;margin-bottom:20px;">
+        <button class="chip active" onclick="filterRegs('all', this)">All</button>
+        <button class="chip" onclick="filterRegs('pending', this)">⏳ Pending</button>
+        <button class="chip" onclick="filterRegs('approved', this)">✅ Approved</button>
+        <button class="chip" onclick="filterRegs('rejected', this)">❌ Rejected</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Referral Code</th>
+              <th>Status</th>
+              <th>Submitted</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="regs-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== REFERRAL CODES PANEL ===== -->
+    <div id="panel-referrals" style="display:none;">
+
+      <!-- Create New Code -->
+      <div class="glass-card" style="margin-bottom:24px;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:16px;">🎟️ Create New Referral Code</div>
+        <div style="display:flex;gap:12px;align-items:flex-end;">
+          <div style="flex:1;">
+            <label class="form-label">Referral Code</label>
+            <input type="text" id="new-ref-code" class="form-control" placeholder="e.g. PREMIUM2024" style="text-transform:uppercase;letter-spacing:2px;font-weight:600;" oninput="this.value=this.value.toUpperCase().replace(/\s/g,'')">
+          </div>
+          <button class="btn btn-primary" onclick="handleCreateCode()" style="padding:12px 28px;white-space:nowrap;">
+            ➕ Create Code
+          </button>
+          <button class="btn btn-outline" onclick="generateRandomCode()" style="padding:12px 20px;white-space:nowrap;">
+            🎲 Random
+          </button>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">Codes are alphanumeric, uppercase only. Share with users you want to invite.</div>
+      </div>
+
+      <!-- Codes Table -->
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Status</th>
+              <th>Times Used</th>
+              <th>Created</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="refs-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Registration Detail Modal -->
+<div class="modal-overlay" id="reg-modal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title">Registration Details</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="reg-modal-content"></div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  let currentTabName = 'registrations';
+  let filterStatus = 'all';
+
+  window.onload = function () {
+    const user = requireAuth(true);
+    if (!user) return;
+    updateNavBar(user);
+    renderRegistrations();
+  };
+
+  function switchTab(tab, btn) {
+    currentTabName = tab;
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-registrations').style.display = tab === 'registrations' ? 'block' : 'none';
+    document.getElementById('panel-referrals').style.display = tab === 'referrals' ? 'block' : 'none';
+    if (tab === 'referrals') renderReferralCodes();
+    else renderRegistrations();
+  }
+
+  // ===== REGISTRATIONS =====
+  function filterRegs(status, btn) {
+    filterStatus = status;
+    document.querySelectorAll('#panel-registrations .chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    renderRegistrations();
+  }
+
+  function renderRegistrations() {
+    const db = getDB();
+    let regs = [...db.pendingRegistrations].sort((a, b) => b.createdAt - a.createdAt);
+
+    const pending = regs.filter(r => r.status === 'pending');
+    const approved = regs.filter(r => r.status === 'approved');
+    const rejected = regs.filter(r => r.status === 'rejected');
+
+    document.getElementById('pending-count').textContent = pending.length;
+    document.getElementById('reg-pending').textContent = pending.length;
+    document.getElementById('reg-approved').textContent = approved.length;
+    document.getElementById('reg-rejected').textContent = rejected.length;
+
+    if (filterStatus !== 'all') regs = regs.filter(r => r.status === filterStatus);
+
+    const tbody = document.getElementById('regs-tbody');
+    if (regs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:40px;">No registration requests found</td></tr>';
+      return;
+    }
+
+    const badges = { pending: 'badge-warning', approved: 'badge-success', rejected: 'badge-danger' };
+    const labels = { pending: '⏳ Pending', approved: '✅ Approved', rejected: '❌ Rejected' };
+
+    tbody.innerHTML = regs.map(r => `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:15px;flex-shrink:0;">${r.name.charAt(0).toUpperCase()}</div>
+            <div style="font-weight:600;">${r.name}</div>
+          </div>
+        </td>
+        <td style="color:var(--text-secondary);font-size:13px;">${r.email}</td>
+        <td>
+          <span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:var(--success);padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:1px;">${r.referralCode}</span>
+        </td>
+        <td><span class="badge ${badges[r.status]}">${labels[r.status]}</span></td>
+        <td style="font-size:12px;color:var(--text-secondary);">${formatDate(r.createdAt)}</td>
+        <td>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="showRegDetail('${r.id}')">🔍 View</button>
+            ${r.status === 'pending' ? `
+              <button class="btn btn-success btn-sm" onclick="approveReg('${r.id}')">✅ Approve</button>
+              <button class="btn btn-danger btn-sm" onclick="rejectReg('${r.id}')">❌ Reject</button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function showRegDetail(regId) {
+    const db = getDB();
+    const r = db.pendingRegistrations.find(x => x.id === regId);
+    if (!r) return;
+
+    const badges = { pending: 'badge-warning', approved: 'badge-success', rejected: 'badge-danger' };
+    const labels = { pending: '⏳ Pending Review', approved: '✅ Approved', rejected: '❌ Rejected' };
+
+    document.getElementById('reg-modal-content').innerHTML = `
+      <div style="display:grid;gap:16px;">
+        <div style="text-align:center;padding:12px 0;">
+          <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:28px;color:white;margin:0 auto 12px;">${r.name.charAt(0).toUpperCase()}</div>
+          <div style="font-size:20px;font-weight:800;">${r.name}</div>
+          <div style="font-size:14px;color:var(--text-secondary);margin-top:4px;">${r.email}</div>
+          <div style="margin-top:8px;"><span class="badge ${badges[r.status]}">${labels[r.status]}</span></div>
+        </div>
+
+        <div style="display:grid;gap:8px;font-size:14px;">
+          <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+            <span style="color:var(--text-secondary);">Referral Code Used</span>
+            <strong style="color:var(--success);letter-spacing:1px;">${r.referralCode}</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+            <span style="color:var(--text-secondary);">Submitted</span>
+            <strong>${formatDate(r.createdAt)}</strong>
+          </div>
+          ${r.approvedAt ? `<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-secondary);">Approved At</span><strong style="color:var(--success);">${formatDate(r.approvedAt)}</strong></div>` : ''}
+          ${r.rejectedAt ? `<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-secondary);">Rejected At</span><strong style="color:var(--danger);">${formatDate(r.rejectedAt)}</strong></div>` : ''}
+        </div>
+
+        ${r.status === 'pending' ? `
+          <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;font-size:13px;color:var(--info);">
+            ℹ️ <strong>Approving</strong> will create a live account for this user. They will be able to login immediately.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <button class="btn btn-success" onclick="approveReg('${r.id}');closeModal()">✅ Approve Account</button>
+            <button class="btn btn-danger" onclick="rejectReg('${r.id}');closeModal()">❌ Reject Request</button>
+          </div>` :
+          `<div class="info-box ${r.status === 'approved' ? 'success' : 'warning'}">
+            ${r.status === 'approved' ? '✅ This account has been approved and is now active.' : '❌ This registration request was rejected.'}
+          </div>`}
+      </div>`;
+
+    document.getElementById('reg-modal').classList.add('active');
+  }
+
+  function approveReg(id) {
+    if (approveRegistration(id)) {
+      showToast('✅ Account approved! User can now login.', 'success');
+      renderRegistrations();
+    }
+  }
+
+  function rejectReg(id) {
+    if (confirm('Are you sure you want to reject this registration request?')) {
+      if (rejectRegistration(id)) {
+        showToast('❌ Registration rejected.', 'error');
+        renderRegistrations();
+      }
+    }
+  }
+
+  // ===== REFERRAL CODES =====
+  function renderReferralCodes() {
+    const db = getDB();
+    const codes = [...db.referralCodes].sort((a, b) => b.createdAt - a.createdAt);
+    const tbody = document.getElementById('refs-tbody');
+
+    if (codes.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:40px;">No referral codes yet. Create one above.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = codes.map(r => `
+      <tr>
+        <td>
+          <span style="font-family:monospace;font-size:16px;font-weight:800;letter-spacing:3px;color:var(--accent);">${r.code}</span>
+        </td>
+        <td>
+          ${r.isActive
+            ? '<span class="badge badge-success">✅ Active</span>'
+            : '<span class="badge badge-danger">❌ Inactive</span>'}
+        </td>
+        <td style="text-align:center;">
+          <span class="badge badge-info">${r.usedCount || 0} times</span>
+        </td>
+        <td style="font-size:12px;color:var(--text-secondary);">${formatDate(r.createdAt)}</td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-outline btn-sm" onclick="copyCode('${r.code}')">📋 Copy</button>
+            ${r.isActive
+              ? `<button class="btn btn-danger btn-sm" onclick="disableCode('${r.code}')">🚫 Disable</button>`
+              : `<button class="btn btn-success btn-sm" onclick="enableCode('${r.code}')">✅ Enable</button>`}
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function handleCreateCode() {
+    const code = document.getElementById('new-ref-code').value.trim();
+    if (!code) { showToast('❌ Please enter a referral code!', 'error'); return; }
+    if (code.length < 4) { showToast('❌ Code must be at least 4 characters!', 'error'); return; }
+    const result = createReferralCode(code);
+    if (result.success) {
+      showToast(`✅ Referral code "${code}" created!`, 'success');
+      document.getElementById('new-ref-code').value = '';
+      renderReferralCodes();
+    } else {
+      showToast('❌ ' + result.message, 'error');
+    }
+  }
+
+  function generateRandomCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    document.getElementById('new-ref-code').value = code;
+  }
+
+  function copyCode(code) {
+    navigator.clipboard.writeText(code).then(() => showToast(`✅ Code "${code}" copied to clipboard!`, 'success'));
+  }
+
+  function disableCode(code) {
+    if (confirm(`Disable referral code "${code}"? Users won't be able to use it anymore.`)) {
+      const db = getDB();
+      const ref = db.referralCodes.find(r => r.code === code);
+      if (ref) { ref.isActive = false; saveDB(db); renderReferralCodes(); showToast(`🚫 Code "${code}" disabled.`, 'info'); }
+    }
+  }
+
+  function enableCode(code) {
+    const db = getDB();
+    const ref = db.referralCodes.find(r => r.code === code);
+    if (ref) { ref.isActive = true; saveDB(db); renderReferralCodes(); showToast(`✅ Code "${code}" enabled.`, 'success'); }
+  }
+
+  function closeModal() { document.getElementById('reg-modal').classList.remove('active'); }
+  document.getElementById('reg-modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+</script>
+</body>
+</html>

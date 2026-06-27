@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Withdraw — ShopChain</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar">
+  <a href="/index.html" class="navbar-brand">
+    <div class="logo-icon">S</div>
+    <div class="logo-text">ShopChain</div>
+  </a>
+  <div class="navbar-right" id="nav-right"></div>
+</nav>
+
+<div class="page-layout">
+  <aside class="sidebar">
+    <div class="sidebar-menu">
+      <a href="/dashboard.html" class="sidebar-item"><span class="icon">📊</span> Dashboard</a>
+      <a href="/deposit.html" class="sidebar-item"><span class="icon">💰</span> Deposit</a>
+      <a href="/my-products.html" class="sidebar-item"><span class="icon">📦</span> My Products</a>
+      <a href="/withdraw.html" class="sidebar-item active"><span class="icon">💸</span> Withdraw</a>
+      <a href="/index.html" class="sidebar-item"><span class="icon">🛒</span> Marketplace</a>
+      <a href="#" onclick="logout()" class="sidebar-item" style="color:var(--danger);margin-top:8px;"><span class="icon">🚪</span> Logout</a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="page-header">
+      <h1>💸 Withdraw</h1>
+      <p>Withdraw your profits to your crypto wallet</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+
+      <div>
+        <div style="background:linear-gradient(135deg,#1e3a5f,#0a1628);border:1px solid rgba(34,197,94,0.3);border-radius:20px;padding:24px;margin-bottom:20px;">
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px;">Available Balance</div>
+          <div style="font-size:38px;font-weight:900;color:var(--success);" id="avail-balance">$0.00</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:8px;">⚠️ Withdrawals require admin approval</div>
+        </div>
+
+        <div class="glass-card">
+          <div style="font-size:16px;font-weight:700;margin-bottom:20px;">Withdrawal Form</div>
+          <form id="withdraw-form" onsubmit="handleWithdraw(event)">
+
+            <div class="form-group">
+              <label class="form-label">💵 Amount (USD)</label>
+              <div style="position:relative;">
+                <input type="number" id="wtd-amount" class="form-control" placeholder="Enter withdrawal amount" min="10" step="0.01" required>
+                <button type="button" onclick="setMaxAmount()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.3);border-radius:6px;padding:4px 10px;color:var(--primary);font-size:12px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;">MAX</button>
+              </div>
+            </div>
+
+              <select id="wtd-crypto" class="form-control">
+                <option value="USDT_BEP20">USDT (BSC BEP20)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">📬 Your Wallet Address</label>
+              <input type="text" id="wtd-wallet" class="form-control" placeholder="Enter your crypto wallet address" required>
+              <div style="font-size:12px;color:var(--warning);margin-top:6px;">⚠️ Double-check your address. Funds sent to the wrong address cannot be recovered!</div>
+            </div>
+
+            <div class="info-box warning" style="margin-bottom:20px;">
+              ⏳ Withdrawal requests are reviewed by admin. If rejected, your balance will be refunded automatically.
+            </div>
+
+            <div id="wtd-error" style="display:none;margin-bottom:16px;" class="info-box warning"></div>
+
+            <button type="submit" class="btn btn-primary" id="wtd-btn" style="font-size:16px;padding:14px;">
+              📨 Submit Withdrawal Request
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div>
+        <div class="glass-card">
+          <div style="font-size:16px;font-weight:700;margin-bottom:16px;">📋 Withdrawal History</div>
+          <div id="withdraw-history"></div>
+        </div>
+
+        <div class="glass-card" style="margin-top:20px;">
+          <div style="font-size:15px;font-weight:700;margin-bottom:14px;">📌 Important Notes</div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:2;">
+            <div>✅ Minimum withdrawal: <strong style="color:var(--text-primary);">$10</strong></div>
+            <div>⏳ Processing time: <strong style="color:var(--text-primary);">1–72 hours</strong></div>
+            <div>🔒 Admin approval required for all withdrawals</div>
+            <div>❌ If rejected, balance is automatically refunded</div>
+            <div>📱 Network fees may apply</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  let currentUser;
+
+  window.onload = function () {
+    currentUser = requireAuth();
+    if (!currentUser) return;
+    updateNavBar(currentUser);
+    document.getElementById('avail-balance').textContent = formatMoney(currentUser.balance);
+    renderWithdrawHistory();
+  };
+
+  function setMaxAmount() {
+    document.getElementById('wtd-amount').value = currentUser.balance.toFixed(2);
+  }
+
+  function handleWithdraw(e) {
+    e.preventDefault();
+    const amount = parseFloat(document.getElementById('wtd-amount').value);
+    const crypto = document.getElementById('wtd-crypto').value;
+    const wallet = document.getElementById('wtd-wallet').value.trim();
+    const btn = document.getElementById('wtd-btn');
+    const errEl = document.getElementById('wtd-error');
+
+    errEl.style.display = 'none';
+    currentUser = getCurrentUser();
+
+    if (amount < 10) { errEl.style.display = 'block'; errEl.textContent = '❌ Minimum withdrawal is $10!'; return; }
+    if (amount > currentUser.balance) { errEl.style.display = 'block'; errEl.textContent = '❌ Insufficient balance!'; return; }
+    if (wallet.length < 10) { errEl.style.display = 'block'; errEl.textContent = '❌ Please enter a valid wallet address!'; return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Submitting...';
+
+    setTimeout(() => {
+      const result = submitWithdraw(currentUser.id, amount, wallet, crypto);
+      if (result.success) {
+        showToast('✅ Withdrawal request submitted! Awaiting admin approval.', 'success');
+        document.getElementById('withdraw-form').reset();
+        currentUser = getCurrentUser();
+        document.getElementById('avail-balance').textContent = formatMoney(currentUser.balance);
+        updateNavBar(currentUser);
+        renderWithdrawHistory();
+      } else {
+        errEl.style.display = 'block';
+        errEl.textContent = '❌ ' + result.message;
+      }
+      btn.disabled = false;
+      btn.innerHTML = '📨 Submit Withdrawal Request';
+    }, 800);
+  }
+
+  function renderWithdrawHistory() {
+    const db = getDB();
+    const withdrawals = db.withdrawals.filter(w => w.userId === currentUser.id).sort((a, b) => b.createdAt - a.createdAt);
+    const el = document.getElementById('withdraw-history');
+
+    if (withdrawals.length === 0) {
+      el.innerHTML = `<div class="empty-state" style="padding:30px 0;"><div class="empty-icon" style="font-size:40px;">📭</div><p style="font-size:13px;">No withdrawals yet</p></div>`;
+      return;
+    }
+
+    const statusMap = {
+      pending: '<span class="badge badge-warning">⏳ Pending</span>',
+      approved: '<span class="badge badge-success">✅ Approved</span>',
+      rejected: '<span class="badge badge-danger">❌ Rejected</span>',
+    };
+
+    el.innerHTML = withdrawals.map(w => `
+      <div style="padding:14px 0;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div style="font-weight:700;color:var(--danger);">-${formatMoney(w.amount)}</div>
+          <div>${statusMap[w.status]}</div>
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">${w.crypto} → ${w.walletAddress.substring(0, 20)}...</div>
+        <div style="font-size:11px;color:var(--text-muted);">${formatDate(w.createdAt)}</div>
+        ${w.status === 'rejected' ? '<div class="info-box warning" style="margin-top:8px;padding:8px 12px;font-size:12px;">❌ Your withdrawal was rejected. Balance has been refunded to your account.</div>' : ''}
+        ${w.status === 'approved' ? '<div class="info-box success" style="margin-top:8px;padding:8px 12px;font-size:12px;">✅ Your withdrawal has been processed successfully.</div>' : ''}
+      </div>
+    `).join('');
+  }
+</script>
+</body>
+</html>

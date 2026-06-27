@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — ShopChain</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar">
+  <a href="/index.html" class="navbar-brand">
+    <div class="logo-icon">S</div>
+    <div class="logo-text">ShopChain</div>
+  </a>
+  <div class="navbar-right" id="nav-right"></div>
+</nav>
+
+<div class="page-layout">
+  <aside class="sidebar">
+    <div class="sidebar-menu">
+      <a href="/dashboard.html" class="sidebar-item active"><span class="icon">📊</span> Dashboard</a>
+      <a href="/deposit.html" class="sidebar-item"><span class="icon">💰</span> Deposit</a>
+      <a href="/my-products.html" class="sidebar-item"><span class="icon">📦</span> My Products</a>
+      <a href="/withdraw.html" class="sidebar-item"><span class="icon">💸</span> Withdraw</a>
+      <a href="/index.html" class="sidebar-item"><span class="icon">🛒</span> Marketplace</a>
+      <a href="#" onclick="logout()" class="sidebar-item" style="color:var(--danger);border-left-color:transparent;margin-top:8px;"><span class="icon">🚪</span> Logout</a>
+    </div>
+    <div class="glass-card" style="margin-top:16px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:8px;">⚡</div>
+      <div style="font-weight:700;margin-bottom:6px;">Quick Deposit</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">USDT, BTC or ETH</div>
+      <a href="/deposit.html" class="btn btn-primary btn-sm">Deposit Now</a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="page-header">
+      <h1 id="welcome-text">Welcome 👋</h1>
+      <p>View your account summary and recent activity</p>
+    </div>
+
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-label">Total Balance</div>
+        <div class="stat-value orange" id="stat-balance">$0.00</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-label">Active Products</div>
+        <div class="stat-value blue" id="stat-products">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📈</div>
+        <div class="stat-label">Total Profit</div>
+        <div class="stat-value green" id="stat-profit">$0.00</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💸</div>
+        <div class="stat-label">Total Withdrawn</div>
+        <div class="stat-value" id="stat-withdrawn">$0.00</div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:32px;">
+      <a href="/deposit.html" style="text-decoration:none;">
+        <div class="glass-card" style="text-align:center;cursor:pointer;transition:all 0.3s;padding:20px 16px;" onmouseover="this.style.borderColor='rgba(249,115,22,0.4)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+          <div style="font-size:32px;margin-bottom:8px;">💰</div>
+          <div style="font-weight:600;font-size:14px;">Deposit</div>
+        </div>
+      </a>
+      <a href="/index.html" style="text-decoration:none;">
+        <div class="glass-card" style="text-align:center;cursor:pointer;transition:all 0.3s;padding:20px 16px;" onmouseover="this.style.borderColor='rgba(249,115,22,0.4)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+          <div style="font-size:32px;margin-bottom:8px;">🛒</div>
+          <div style="font-weight:600;font-size:14px;">Buy Products</div>
+        </div>
+      </a>
+      <a href="/my-products.html" style="text-decoration:none;">
+        <div class="glass-card" style="text-align:center;cursor:pointer;transition:all 0.3s;padding:20px 16px;" onmouseover="this.style.borderColor='rgba(249,115,22,0.4)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+          <div style="font-size:32px;margin-bottom:8px;">📦</div>
+          <div style="font-weight:600;font-size:14px;">My Products</div>
+        </div>
+      </a>
+      <a href="/withdraw.html" style="text-decoration:none;">
+        <div class="glass-card" style="text-align:center;cursor:pointer;transition:all 0.3s;padding:20px 16px;" onmouseover="this.style.borderColor='rgba(249,115,22,0.4)'" onmouseout="this.style.borderColor='var(--glass-border)'">
+          <div style="font-size:32px;margin-bottom:8px;">💸</div>
+          <div style="font-weight:600;font-size:14px;">Withdraw</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="section-title">Recent Products</div>
+    <div class="glass-card" style="margin-bottom:24px;">
+      <div id="recent-products"></div>
+    </div>
+
+    <div class="section-title">Transaction History</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="tx-history"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+  let currentUser = requireAuth();
+
+  window.onload = function () {
+    if (!currentUser) return;
+    updateNavBar(currentUser);
+    document.getElementById('welcome-text').textContent = `Welcome, ${currentUser.name} 👋`;
+    renderDashboard();
+  };
+
+  function renderDashboard() {
+    currentUser = getCurrentUser();
+    const db = getDB();
+    const purchases = db.purchases.filter(p => p.userId === currentUser.id);
+    const withdrawals = db.withdrawals.filter(w => w.userId === currentUser.id && w.status === 'approved');
+    const soldProducts = purchases.filter(p => p.status === 'sold');
+    const activePurchases = purchases.filter(p => p.status === 'holding');
+    const totalProfit = soldProducts.reduce((s, p) => s + (p.sellPrice - p.buyPrice), 0);
+    const totalWithdrawn = withdrawals.reduce((s, w) => s + w.amount, 0);
+
+    document.getElementById('stat-balance').textContent = formatMoney(currentUser.balance);
+    document.getElementById('stat-products').textContent = activePurchases.length;
+    document.getElementById('stat-profit').textContent = formatMoney(totalProfit);
+    document.getElementById('stat-withdrawn').textContent = formatMoney(totalWithdrawn);
+
+    const rpEl = document.getElementById('recent-products');
+    if (activePurchases.length === 0) {
+      rpEl.innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><h3>No active products</h3><p>Buy products from the marketplace to get started</p><a href="/index.html" class="btn btn-primary" style="width:auto;margin-top:16px;padding:10px 24px;">🛒 Browse Products</a></div>`;
+    } else {
+      rpEl.innerHTML = activePurchases.slice(0, 3).map(p => `
+        <div style="display:flex;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid var(--border);">
+          <div style="font-size:36px;width:52px;height:52px;background:var(--glass);border-radius:12px;display:flex;align-items:center;justify-content:center;">${p.productEmoji}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;margin-bottom:4px;">${p.productName}</div>
+            <div style="font-size:13px;color:var(--text-secondary);">Bought: ${formatMoney(p.buyPrice)} → Sell for: <span style="color:var(--success);font-weight:600;">${formatMoney(p.sellPrice)}</span></div>
+          </div>
+          <div id="timer-dash-${p.id}"></div>
+        </div>
+      `).join('');
+      activePurchases.slice(0, 3).forEach(p => {
+        startCountdown(`timer-dash-${p.id}`, p.canSellAt, null);
+      });
+    }
+
+    const txEl = document.getElementById('tx-history');
+    const allTx = [
+      ...db.deposits.filter(d => d.userId === currentUser.id).map(d => ({
+        type: '💰 Deposit', amount: d.amount, status: d.status, date: d.createdAt, sign: '+'
+      })),
+      ...purchases.map(p => ({
+        type: '🛒 Bought: ' + p.productName.substring(0, 20), amount: p.buyPrice, status: 'completed', date: p.boughtAt, sign: '-'
+      })),
+      ...purchases.filter(p => p.status === 'sold').map(p => ({
+        type: '📈 Sold: ' + p.productName.substring(0, 20), amount: p.sellPrice, status: 'completed', date: p.soldAt, sign: '+'
+      })),
+      ...db.withdrawals.filter(w => w.userId === currentUser.id).map(w => ({
+        type: '💸 Withdrawal', amount: w.amount, status: w.status, date: w.createdAt, sign: '-'
+      })),
+    ].sort((a, b) => b.date - a.date);
+
+    if (allTx.length === 0) {
+      txEl.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:32px;">No transactions yet</td></tr>';
+    } else {
+      const statusMap = {
+        pending: '<span class="badge badge-warning">Pending</span>',
+        approved: '<span class="badge badge-success">Approved</span>',
+        rejected: '<span class="badge badge-danger">Rejected</span>',
+        completed: '<span class="badge badge-info">Completed</span>',
+      };
+      txEl.innerHTML = allTx.slice(0, 15).map(tx => `
+        <tr>
+          <td>${tx.type}</td>
+          <td style="font-weight:700;color:${tx.sign === '+' ? 'var(--success)' : 'var(--danger)'};">${tx.sign}${formatMoney(tx.amount)}</td>
+          <td>${statusMap[tx.status] || tx.status}</td>
+          <td style="color:var(--text-secondary);font-size:13px;">${formatDate(tx.date)}</td>
+        </tr>
+      `).join('');
+    }
+  }
+</script>
+</body>
+</html>
