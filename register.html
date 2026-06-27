@@ -192,7 +192,7 @@
 
   let verifiedCode = '';
 
-  function verifyCode() {
+  async function verifyCode() {
     const code = document.getElementById('ref-code').value.trim();
     const errEl = document.getElementById('ref-error');
     const btn = document.getElementById('verify-btn');
@@ -202,6 +202,11 @@
     btn.disabled = true;
     btn.innerHTML = '<span class="loading-spinner"></span> Verifying...';
     errEl.style.display = 'none';
+
+    // Force sync with cloud database first to get the absolute latest codes
+    if (typeof syncWithRemote === 'function') {
+      await syncWithRemote();
+    }
 
     setTimeout(() => {
       const result = validateReferralCode(code);
@@ -217,7 +222,7 @@
         btn.disabled = false;
         btn.innerHTML = '🔍 Verify Code';
       }
-    }, 700);
+    }, 300);
   }
 
   // Allow Enter key on referral input
