@@ -30,18 +30,18 @@ const defaultDB = {
     }
   ],
   products: [
-    { id: 'p1', name: 'iPhone 15 Pro Max', category: 'Electronics', emoji: '📱', price: 150, description: 'Latest Apple flagship smartphone with titanium design and A17 Pro chip.', stock: 50 },
-    { id: 'p2', name: 'Samsung 4K Smart TV', category: 'Electronics', emoji: '📺', price: 200, description: '65-inch 4K QLED Smart TV with HDR and built-in streaming apps.', stock: 30 },
-    { id: 'p3', name: 'Nike Air Max 270', category: 'Fashion', emoji: '👟', price: 80, description: 'Premium running shoes with Max Air cushioning for all-day comfort.', stock: 100 },
-    { id: 'p4', name: 'MacBook Pro M3', category: 'Electronics', emoji: '💻', price: 300, description: 'Powerful laptop with M3 chip, 16GB RAM and stunning Liquid Retina display.', stock: 20 },
-    { id: 'p5', name: 'Sony WH-1000XM5', category: 'Electronics', emoji: '🎧', price: 60, description: 'Industry-leading noise cancelling headphones with 30-hour battery life.', stock: 75 },
-    { id: 'p6', name: 'Adidas Ultraboost', category: 'Fashion', emoji: '👟', price: 90, description: 'High-performance running shoes with Boost midsole technology.', stock: 80 },
-    { id: 'p7', name: 'Rolex Submariner', category: 'Watches', emoji: '⌚', price: 500, description: 'Iconic luxury dive watch with ceramic bezel and Oystersteel bracelet.', stock: 10 },
-    { id: 'p8', name: 'PlayStation 5', category: 'Gaming', emoji: '🎮', price: 120, description: 'Next-gen gaming console with ultra-high speed SSD and DualSense controller.', stock: 40 },
-    { id: 'p9', name: 'iPad Pro 12.9"', category: 'Electronics', emoji: '📲', price: 180, description: 'Powerful tablet with M2 chip, ProMotion display, and all-day battery.', stock: 35 },
-    { id: 'p10', name: 'Louis Vuitton Bag', category: 'Fashion', emoji: '👜', price: 250, description: 'Iconic luxury handbag crafted from premium Monogram canvas.', stock: 15 },
-    { id: 'p11', name: 'DJI Mini 4 Pro', category: 'Electronics', emoji: '🚁', price: 100, description: 'Compact drone with 4K/60fps video, obstacle avoidance, and 34-min flight time.', stock: 25 },
-    { id: 'p12', name: 'Gaming Chair', category: 'Furniture', emoji: '🪑', price: 70, description: 'Ergonomic gaming chair with lumbar support and 4D armrests.', stock: 60 },
+    { id: 'p1', name: 'iPhone 15 Pro Max', category: 'Electronics', image: '/images/products/iphone15.png', price: 150, description: 'Latest Apple flagship smartphone with titanium design and A17 Pro chip.', stock: 50 },
+    { id: 'p2', name: 'Samsung 4K Smart TV', category: 'Electronics', image: '/images/products/samsungtv.png', price: 200, description: '65-inch 4K QLED Smart TV with HDR and built-in streaming apps.', stock: 30 },
+    { id: 'p3', name: 'Nike Air Max 270', category: 'Fashion', image: '/images/products/nike270.png', price: 80, description: 'Premium running shoes with Max Air cushioning for all-day comfort.', stock: 100 },
+    { id: 'p4', name: 'MacBook Pro M3', category: 'Electronics', image: '/images/products/macbook.png', price: 300, description: 'Powerful laptop with M3 chip, 16GB RAM and stunning Liquid Retina display.', stock: 20 },
+    { id: 'p5', name: 'Sony WH-1000XM5', category: 'Electronics', image: '/images/products/sonyheadphone.png', price: 60, description: 'Industry-leading noise cancelling headphones with 30-hour battery life.', stock: 75 },
+    { id: 'p6', name: 'Adidas Ultraboost', category: 'Fashion', image: '/images/products/adidasultra.png', price: 90, description: 'High-performance running shoes with Boost midsole technology.', stock: 80 },
+    { id: 'p7', name: 'Rolex Submariner', category: 'Watches', image: '/images/products/rolex.png', price: 500, description: 'Iconic luxury dive watch with ceramic bezel and Oystersteel bracelet.', stock: 10 },
+    { id: 'p8', name: 'PlayStation 5', category: 'Gaming', image: '/images/products/ps5.png', price: 120, description: 'Next-gen gaming console with ultra-high speed SSD and DualSense controller.', stock: 40 },
+    { id: 'p9', name: 'iPad Pro 12.9"', category: 'Electronics', image: '/images/products/ipad.png', price: 180, description: 'Powerful tablet with M2 chip, ProMotion display, and all-day battery.', stock: 35 },
+    { id: 'p10', name: 'Louis Vuitton Bag', category: 'Fashion', image: '/images/products/lvbag.png', price: 250, description: 'Iconic luxury handbag crafted from premium Monogram canvas.', stock: 15 },
+    { id: 'p11', name: 'DJI Mini 4 Pro', category: 'Electronics', image: '/images/products/djidrone.png', price: 100, description: 'Compact drone with 4K/60fps video, obstacle avoidance, and 34-min flight time.', stock: 25 },
+    { id: 'p12', name: 'Gaming Chair', category: 'Furniture', image: '/images/products/gamingchair.png', price: 70, description: 'Ergonomic gaming chair with lumbar support and 4D armrests.', stock: 60 },
   ],
   deposits: [],
   purchases: [],
@@ -65,7 +65,15 @@ function getDB() {
     return JSON.parse(JSON.stringify(defaultDB));
   }
   const db = JSON.parse(raw);
-  if (!db.products || db.products.length === 0) db.products = defaultDB.products;
+  db.products = defaultDB.products; // always synchronize products list
+  if (db.purchases) {
+    db.purchases.forEach(p => {
+      if (!p.productImage && p.productEmoji) {
+        const prod = defaultDB.products.find(pr => pr.id === p.productId);
+        p.productImage = prod ? prod.image : '/images/products/iphone15.png';
+      }
+    });
+  }
   if (!db.pendingRegistrations) db.pendingRegistrations = [];
   if (!db.referralCodes) db.referralCodes = defaultDB.referralCodes;
   if (!db.siteSettings) db.siteSettings = JSON.parse(JSON.stringify(defaultSettings));
@@ -393,7 +401,7 @@ function buyProduct(userId, productId) {
     id: 'pur_' + Math.random().toString(36).substr(2, 9),
     userId, productId,
     productName: product.name,
-    productEmoji: product.emoji,
+    productImage: product.image,
     buyPrice: product.price,
     sellPrice: parseFloat((product.price * 1.5).toFixed(2)),
     status: 'holding',

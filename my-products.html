@@ -143,7 +143,9 @@
         <div class="glass-card" style="position:relative;overflow:hidden;">
           ${isReady ? '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--success),#16a34a);"></div>' : '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--primary),var(--accent));"></div>'}
           <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
-            <div style="font-size:44px;width:64px;height:64px;background:rgba(255,255,255,0.05);border-radius:14px;display:flex;align-items:center;justify-content:center;">${p.productEmoji}</div>
+            <div style="width:64px;height:64px;background:rgba(255,255,255,0.05);border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+              <img src="${p.productImage || ''}" alt="${p.productName}" style="width:100%;height:100%;object-fit:cover;">
+            </div>
             <div>
               <div style="font-weight:700;font-size:15px;margin-bottom:4px;">${p.productName}</div>
               <div style="font-size:12px;color:var(--text-secondary);">Purchased: ${formatDate(p.boughtAt)}</div>
@@ -195,7 +197,7 @@
       <tr>
         <td>
           <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:24px;">${p.productEmoji}</span>
+            <img src="${p.productImage || ''}" alt="${p.productName}" style="width:32px;height:32px;border-radius:6px;object-fit:cover;">
             <span style="font-weight:500;">${p.productName}</span>
           </div>
         </td>
@@ -216,7 +218,7 @@
 
     document.getElementById('sell-modal-body').innerHTML = `
       <div style="text-align:center;padding:10px 0;">
-        <div style="font-size:60px;margin-bottom:12px;">${purchase.productEmoji}</div>
+        <img src="${purchase.productImage || ''}" alt="${purchase.productName}" style="height:120px;width:auto;margin:0 auto 12px auto;display:block;border-radius:10px;object-fit:contain;">
         <div style="font-size:18px;font-weight:700;margin-bottom:20px;">${purchase.productName}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:24px;">
           <div style="background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);border-radius:10px;padding:12px;">

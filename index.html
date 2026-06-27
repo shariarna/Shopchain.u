@@ -173,7 +173,7 @@
     grid.innerHTML = products.map(p => `
       <div class="product-card fade-up" onclick="showBuyModal('${p.id}')">
         <div class="product-img-wrap">
-          <div style="font-size:70px;">${p.emoji}</div>
+          <img src="${p.image}" class="product-img" alt="${p.name}">
         </div>
         <div class="product-info">
           <div class="product-category">${p.category}</div>
@@ -214,7 +214,7 @@
     if (!user) {
       document.getElementById('modal-body').innerHTML = `
         <div style="text-align:center;padding:20px 0;">
-          <div style="font-size:60px;margin-bottom:16px;">${product.emoji}</div>
+          <img src="${product.image}" alt="${product.name}" style="height:120px;width:auto;margin:0 auto 16px auto;display:block;border-radius:10px;object-fit:contain;">
           <div style="font-size:18px;font-weight:700;margin-bottom:8px;">${product.name}</div>
           <div style="color:var(--text-secondary);font-size:14px;margin-bottom:24px;">${product.description}</div>
           <div style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:12px;padding:16px;margin-bottom:20px;">
@@ -229,7 +229,7 @@
       const canAfford = user.balance >= product.price;
       document.getElementById('modal-body').innerHTML = `
         <div style="text-align:center;padding:10px 0;">
-          <div style="font-size:60px;margin-bottom:12px;">${product.emoji}</div>
+          <img src="${product.image}" alt="${product.name}" style="height:120px;width:auto;margin:0 auto 12px auto;display:block;border-radius:10px;object-fit:contain;">
           <div style="font-size:16px;font-weight:700;margin-bottom:6px;">${product.name}</div>
           <div style="color:var(--text-secondary);font-size:13px;margin-bottom:20px;">${product.description}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
