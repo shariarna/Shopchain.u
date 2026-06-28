@@ -180,7 +180,15 @@
           </div>
           <div style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">${netLabel} → ${w.walletAddress.substring(0, 20)}...</div>
           <div style="font-size:11px;color:var(--text-muted);">${formatDate(w.createdAt)}</div>
-          ${w.status === 'rejected' ? '<div class="info-box warning" style="margin-top:8px;padding:8px 12px;font-size:12px;">❌ Your withdrawal was rejected. Balance has been refunded to your account.</div>' : ''}
+          ${w.status === 'rejected' ? `
+            <div class="info-box warning" style="margin-top:8px;padding:10px 12px;font-size:12px;display:grid;gap:8px;">
+              <div>❌ Your withdrawal was rejected. Balance has been refunded to your account.</div>
+              <div>
+                <a href="https://t.me/ShopChain0" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#0088cc;color:white;text-decoration:none;padding:6px 12px;border-radius:6px;font-weight:700;font-size:11px;transition:opacity 0.2s;">
+                  <span>💬</span> Contact Support
+                </a>
+              </div>
+            </div>` : ''}
           ${w.status === 'approved' ? '<div class="info-box success" style="margin-top:8px;padding:8px 12px;font-size:12px;">✅ Your withdrawal has been processed successfully.</div>' : ''}
         </div>`;
     }).join('');
