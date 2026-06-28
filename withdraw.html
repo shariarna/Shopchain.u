@@ -89,8 +89,8 @@
         <div class="glass-card" style="margin-top:20px;">
           <div style="font-size:15px;font-weight:700;margin-bottom:14px;">📌 Important Notes</div>
           <div style="font-size:13px;color:var(--text-secondary);line-height:2;">
-            <div>✅ Minimum withdrawal: <strong style="color:var(--text-primary);">$10</strong></div>
-            <div>⏳ Processing time: <strong style="color:var(--text-primary);">1–72 hours</strong></div>
+            <div>✅ Minimum withdrawal: <strong style="color:var(--text-primary);" id="min-withdraw-note">$10.00</strong></div>
+            <div>⏳ Processing time: <strong style="color:var(--text-primary);" id="withdraw-time-note">1–72 hours</strong></div>
             <div>🔒 Admin approval required for all withdrawals</div>
             <div>❌ If rejected, balance is automatically refunded</div>
             <div>📱 Network fees may apply</div>
@@ -105,14 +105,33 @@
 <script src="/js/app.js"></script>
 <script>
   let currentUser;
+  let minWithdraw = 10;
+  let withdrawTime = '1–72 hours';
 
   window.onload = function () {
     currentUser = requireAuth();
     if (!currentUser) return;
     updateNavBar(currentUser);
     document.getElementById('avail-balance').textContent = formatMoney(currentUser.balance);
+    loadSettings();
     renderWithdrawHistory();
   };
+
+  function loadSettings() {
+    const db = getDB();
+    const settings = db.siteSettings || {};
+    minWithdraw = settings.minWithdraw || 10;
+    withdrawTime = settings.withdrawTime || '1–72 hours';
+
+    // Update input field properties
+    const amountInput = document.getElementById('wtd-amount');
+    amountInput.min = minWithdraw;
+    amountInput.placeholder = `Min: $${minWithdraw}`;
+
+    // Update notes
+    document.getElementById('min-withdraw-note').textContent = formatMoney(minWithdraw);
+    document.getElementById('withdraw-time-note').textContent = withdrawTime;
+  }
 
   function setMaxAmount() {
     document.getElementById('wtd-amount').value = currentUser.balance.toFixed(2);
@@ -129,7 +148,7 @@
     errEl.style.display = 'none';
     currentUser = getCurrentUser();
 
-    if (amount < 10) { errEl.style.display = 'block'; errEl.textContent = '❌ Minimum withdrawal is $10!'; return; }
+    if (amount < minWithdraw) { errEl.style.display = 'block'; errEl.textContent = `❌ Minimum withdrawal is $${minWithdraw}!`; return; }
     if (amount > currentUser.balance) { errEl.style.display = 'block'; errEl.textContent = '❌ Insufficient balance!'; return; }
     if (wallet.length < 10) { errEl.style.display = 'block'; errEl.textContent = '❌ Please enter a valid wallet address!'; return; }
 

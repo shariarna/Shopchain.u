@@ -14,6 +14,7 @@ const defaultSettings = {
   },
   minDeposit: 10,
   minWithdraw: 10,
+  withdrawTime: '1-72 hours',
   holdHours: 12,
   profitMultiplier: 1.5,
 };
@@ -244,6 +245,9 @@ function getDB() {
   if (!db.siteSettings.wallets) db.siteSettings.wallets = JSON.parse(JSON.stringify(defaultSettings.wallets));
   if (!db.siteSettings.wallets.USDT_TRC20) {
     db.siteSettings.wallets.USDT_TRC20 = { address: '', network: 'TRON (TRC20)', enabled: true, autoVerify: true };
+  }
+  if (!db.siteSettings.withdrawTime) {
+    db.siteSettings.withdrawTime = '1-72 hours';
   }
   return db;
 }

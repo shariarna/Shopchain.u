@@ -159,6 +159,11 @@
           <input type="number" id="profit-mult" class="form-control" min="1.01" step="0.01" placeholder="1.5">
           <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Sell price = Buy price × this value (1.5 = 150%)</div>
         </div>
+        <div class="form-group">
+          <label class="form-label">⏳ Withdrawal Processing Time</label>
+          <input type="text" id="withdraw-time" class="form-control" placeholder="e.g. 1–72 hours">
+          <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Processing time shown on the withdrawal page</div>
+        </div>
       </div>
       <button class="btn btn-primary" onclick="saveRules()" style="font-size:15px;padding:12px 28px;">
         💾 Save Platform Rules
@@ -229,6 +234,7 @@
     document.getElementById('min-withdraw').value = s.minWithdraw  || 10;
     document.getElementById('hold-hours').value   = s.holdHours    || 12;
     document.getElementById('profit-mult').value  = s.profitMultiplier || 1.5;
+    document.getElementById('withdraw-time').value = s.withdrawTime || '1–72 hours';
 
     // Live previews
     ['usdt_bep20', 'usdt_trc20'].forEach(livePreview);
@@ -311,6 +317,7 @@
     const minWtd   = parseFloat(document.getElementById('min-withdraw').value);
     const holdHrs  = parseFloat(document.getElementById('hold-hours').value);
     const profMult = parseFloat(document.getElementById('profit-mult').value);
+    const wtdTime  = document.getElementById('withdraw-time').value.trim() || '1–72 hours';
 
     if ([minDep, minWtd, holdHrs, profMult].some(isNaN)) {
       showToast('❌ Please enter valid numbers!', 'error'); return;
@@ -322,6 +329,7 @@
     db.siteSettings.minWithdraw = minWtd;
     db.siteSettings.holdHours = holdHrs;
     db.siteSettings.profitMultiplier = profMult;
+    db.siteSettings.withdrawTime = wtdTime;
     saveDB(db);
     showToast('✅ Platform rules saved!', 'success');
   }
