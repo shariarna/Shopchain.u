@@ -199,7 +199,10 @@ async function syncWithRemote() {
       if (JSON.stringify(merged) !== JSON.stringify(remoteDB)) {
         await fetch(REMOTE_DB_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': localStorage.getItem('session_id') || ''
+          },
           body: JSON.stringify(merged)
         });
       }
@@ -208,7 +211,10 @@ async function syncWithRemote() {
       const local = JSON.parse(localStorage.getItem(DB_KEY)) || defaultDB;
       const initRes = await fetch(REMOTE_DB_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': localStorage.getItem('session_id') || ''
+        },
         body: JSON.stringify(local)
       });
       if (initRes.ok) {
@@ -301,13 +307,19 @@ function getEnabledWallets() {
 
 let isSaving = false;
 
-function saveDB(db) {
+function saveDB(db, passwordForLogin = null) {
   localStorage.setItem(DB_KEY, JSON.stringify(db));
   if (REMOTE_DB_URL) {
     isSaving = true;
+    const headers = { 'Content-Type': 'application/json' };
+    
+    const sessionId = localStorage.getItem('session_id');
+    if (sessionId) headers['Authorization'] = sessionId;
+    if (passwordForLogin) headers['X-Auth-Password'] = passwordForLogin;
+
     fetch(REMOTE_DB_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: headers,
       body: JSON.stringify(db)
     })
     .then(() => {
@@ -347,7 +359,7 @@ function login(email, password) {
 
   const sessionId = 'sess_' + Math.random().toString(36).substr(2, 16);
   db.sessions[sessionId] = user.id;
-  saveDB(db);
+  saveDB(db, password);
   localStorage.setItem('session_id', sessionId);
   return { success: true, user };
 }
