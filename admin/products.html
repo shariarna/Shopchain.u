@@ -53,7 +53,7 @@
             <th>Product</th>
             <th>Category</th>
             <th>Price</th>
-            <th>Profit %</th>
+            <th>Rating (Stars)</th>
             <th>Hold Time</th>
             <th>Stock</th>
             <th>Actions</th>
@@ -105,8 +105,14 @@
 
         <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:12px;">
           <div class="form-group">
-            <label class="form-label">📈 Profit (%)</label>
-            <input type="number" id="p-profit" class="form-control" min="1" max="1000" placeholder="e.g. 50" required>
+            <label class="form-label">⭐ Rating (Stars)</label>
+            <select id="p-stars" class="form-control" required>
+              <option value="1">⭐ (1.5x / +50%)</option>
+              <option value="2">⭐⭐ (2.0x / +100%)</option>
+              <option value="3">⭐⭐⭐ (3.0x / +200%)</option>
+              <option value="4">⭐⭐⭐⭐ (4.0x / +300%)</option>
+              <option value="5">⭐⭐⭐⭐⭐ (5.0x / +400%)</option>
+            </select>
           </div>
           <div class="form-group">
             <label class="form-label">⏳ Hold Time (HH:MM:SS)</label>
@@ -164,7 +170,7 @@
     }
 
     tbody.innerHTML = db.products.map(p => {
-      const pPercent = typeof p.profitPercent === 'number' ? p.profitPercent : 50;
+      const profitInfo = getProductProfitInfo(p);
       const durationStr = formatDuration(p.holdHours, p.holdMinutes, p.holdSeconds);
       return `
         <tr>
@@ -179,7 +185,10 @@
           </td>
           <td><span class="chip chip-outline">${p.category}</span></td>
           <td style="font-weight:700;color:var(--primary);">${formatMoney(p.price)}</td>
-          <td style="font-weight:700;color:var(--success);">+${pPercent}%</td>
+          <td style="color:#fbbf24;font-size:14px;white-space:nowrap;">
+            ${renderStars(profitInfo.stars)}
+            <span style="font-size:11px;color:var(--text-muted);display:block;margin-top:2px;">(+${profitInfo.profitPercent}%)</span>
+          </td>
           <td style="font-weight:500;">${durationStr}</td>
           <td><strong style="color:${p.stock > 0 ? 'var(--text-secondary)' : 'var(--danger)'};">${p.stock}</strong></td>
           <td>
@@ -273,7 +282,7 @@
     document.getElementById('p-category').value = product.category;
     document.getElementById('p-price').value = product.price;
     document.getElementById('p-stock').value = product.stock || 0;
-    document.getElementById('p-profit').value = typeof product.profitPercent === 'number' ? product.profitPercent : 50;
+    document.getElementById('p-stars').value = typeof product.stars === 'number' ? product.stars : 1;
     document.getElementById('p-hold-h').value = typeof product.holdHours === 'number' ? product.holdHours : 0;
     document.getElementById('p-hold-m').value = typeof product.holdMinutes === 'number' ? product.holdMinutes : 0;
     document.getElementById('p-hold-s').value = typeof product.holdSeconds === 'number' ? product.holdSeconds : 0;
@@ -312,7 +321,7 @@
     const category = document.getElementById('p-category').value;
     const price = parseFloat(document.getElementById('p-price').value);
     const stock = parseInt(document.getElementById('p-stock').value, 10);
-    const profitPercent = parseInt(document.getElementById('p-profit').value, 10);
+    const stars = parseInt(document.getElementById('p-stars').value, 10);
     const holdHours = parseInt(document.getElementById('p-hold-h').value || 0, 10);
     const holdMinutes = parseInt(document.getElementById('p-hold-m').value || 0, 10);
     const holdSeconds = parseInt(document.getElementById('p-hold-s').value || 0, 10);
@@ -323,13 +332,13 @@
       // Edit mode
       const idx = db.products.findIndex(p => p.id === id);
       if (idx !== -1) {
-        db.products[idx] = { id, name, category, price, stock, profitPercent, holdHours, holdMinutes, holdSeconds, image, description };
+        db.products[idx] = { id, name, category, price, stock, stars, holdHours, holdMinutes, holdSeconds, image, description };
       }
     } else {
       // Add mode
       const newProduct = {
         id: 'p_' + Math.random().toString(36).substr(2, 9),
-        name, category, price, stock, profitPercent, holdHours, holdMinutes, holdSeconds, image, description
+        name, category, price, stock, stars, holdHours, holdMinutes, holdSeconds, image, description
       };
       db.products.push(newProduct);
     }

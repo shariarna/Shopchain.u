@@ -668,7 +668,9 @@ function buyProduct(userId, productId) {
   const holdMinutes = typeof product.holdMinutes === 'number' ? product.holdMinutes : 0;
   const holdSeconds = typeof product.holdSeconds === 'number' ? product.holdSeconds : 0;
   const durationMs = (holdHours * 3600 + holdMinutes * 60 + holdSeconds) * 1000;
-  const profitPercent = typeof product.profitPercent === 'number' ? product.profitPercent : ((settings.profitMultiplier - 1) * 100 || 50);
+  
+  const profitInfo = getProductProfitInfo(product);
+  const pPercent = profitInfo.profitPercent;
 
   user.balance -= product.price;
   const purchase = {
@@ -677,7 +679,7 @@ function buyProduct(userId, productId) {
     productName: product.name,
     productImage: product.image,
     buyPrice: product.price,
-    sellPrice: parseFloat((product.price * (1 + profitPercent / 100)).toFixed(2)),
+    sellPrice: parseFloat((product.price * (1 + pPercent / 100)).toFixed(2)),
     status: 'holding',
     boughtAt: Date.now(),
     canSellAt: Date.now() + durationMs
@@ -792,6 +794,24 @@ function formatDuration(h, m, s) {
 
 function formatDate(ts) {
   return new Date(ts).toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function getProductProfitInfo(product) {
+  if (!product) return { stars: 1, multiplier: 1.5, profitPercent: 50 };
+  const stars = typeof product.stars === 'number' ? product.stars : 1;
+  let multiplier = 1.5;
+  if (stars === 1) multiplier = 1.5;
+  else if (stars === 2) multiplier = 2.0;
+  else if (stars === 3) multiplier = 3.0;
+  else if (stars === 4) multiplier = 4.0;
+  else if (stars === 5) multiplier = 5.0;
+  
+  const profitPercent = Math.round((multiplier - 1) * 100);
+  return { stars, multiplier, profitPercent };
+}
+
+function renderStars(count) {
+  return '⭐'.repeat(count || 1);
 }
 
 function requireAuth(adminRequired = false) {
