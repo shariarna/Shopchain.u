@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Management — ShopChain Admin</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .admin-nav { background: rgba(239,68,68,0.08); border-bottom: 1px solid rgba(239,68,68,0.2); padding: 8px 24px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--danger); position: sticky; top: 70px; z-index: 100; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <a href="/admin/index.html" class="navbar-brand">
+    <div class="logo-icon" style="background:linear-gradient(135deg,#ef4444,#dc2626);">A</div>
+    <div class="logo-text" style="background:linear-gradient(135deg,#ef4444,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">ShopChain Admin</div>
+  </a>
+  <div class="navbar-right" id="nav-right"></div>
+</nav>
+<div class="admin-nav">🛠️ <strong>Admin Panel</strong> — Product Management</div>
+
+<div class="page-layout">
+  <aside class="sidebar">
+    <div class="sidebar-menu">
+      <a href="/admin/index.html" class="sidebar-item"><span class="icon">📊</span> Dashboard</a>
+      <a href="/admin/registrations.html" class="sidebar-item" id="nav-regs"><span class="icon">📝</span> Registrations <span id="nav-reg-badge" style="display:none;background:var(--warning);color:#000;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;margin-left:auto;"></span></a>
+      <a href="/admin/deposits.html" class="sidebar-item"><span class="icon">💰</span> Deposits</a>
+      <a href="/admin/withdrawals.html" class="sidebar-item"><span class="icon">💸</span> Withdrawals</a>
+      <a href="/admin/users.html" class="sidebar-item"><span class="icon">👥</span> Users</a>
+      <a href="/admin/products.html" class="sidebar-item active"><span class="icon">📦</span> Products</a>
+      <a href="/admin/settings.html" class="sidebar-item"><span class="icon">⚙️</span> Settings</a>
+      <div style="height:1px;background:var(--border);margin:8px 0;"></div>
+      <a href="/index.html" class="sidebar-item"><span class="icon">🌐</span> Main Site</a>
+      <a href="#" onclick="logout()" class="sidebar-item" style="color:var(--danger);margin-top:4px;"><span class="icon">🚪</span> Logout</a>
+    </div>
+  </aside>
+
+  <main>
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <h1>📦 Product Management</h1>
+        <p>Add, edit, or remove products and set their profit details</p>
+      </div>
+      <button class="btn btn-primary" onclick="openAddModal()" style="width:auto;padding:10px 20px;">
+        ➕ Add New Product
+      </button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Profit %</th>
+            <th>Hold Time</th>
+            <th>Stock</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="products-tbody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Add/Edit Product Modal -->
+<div class="modal-overlay" id="product-modal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Add Product</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="product-form" onsubmit="handleSaveProduct(event)">
+        <input type="hidden" id="product-id">
+
+        <div class="form-group">
+          <label class="form-label">🏷️ Product Name</label>
+          <input type="text" id="p-name" class="form-control" placeholder="e.g. iPhone 15 Pro Max" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">📂 Category</label>
+          <select id="p-category" class="form-control" required>
+            <option value="Electronics">Electronics</option>
+            <option value="Fashion">Fashion</option>
+            <option value="Watches">Watches</option>
+            <option value="Gaming">Gaming</option>
+            <option value="Furniture">Furniture</option>
+          </select>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label class="form-label">💰 Price (USDT)</label>
+            <input type="number" id="p-price" class="form-control" min="1" step="0.01" placeholder="e.g. 150" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">📦 Stock</label>
+            <input type="number" id="p-stock" class="form-control" min="0" placeholder="e.g. 50" required>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label class="form-label">📈 Profit (%)</label>
+            <input type="number" id="p-profit" class="form-control" min="1" max="1000" placeholder="e.g. 50" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">⏳ Hold Time (Hours)</label>
+            <input type="number" id="p-hold" class="form-control" min="1" placeholder="e.g. 12" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">🖼️ Image Path or URL</label>
+          <input type="text" id="p-image" class="form-control" placeholder="e.g. /images/products/iphone15.png" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">📝 Description</label>
+          <textarea id="p-desc" class="form-control" rows="3" placeholder="Write description here..." style="resize:vertical;"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="save-btn" style="margin-top:10px;">
+          💾 Save Product
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js?v=2.0.2"></script>
+<script>
+  window.onload = function () {
+    const user = requireAuth(true);
+    if (!user) return;
+    updateNavBar(user);
+    renderProductsList();
+  };
+
+  function renderProductsList() {
+    const db = getDB();
+    const tbody = document.getElementById('products-tbody');
+    
+    if (!db.products || db.products.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:32px;">No products found. Add some to get started!</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = db.products.map(p => {
+      const pPercent = typeof p.profitPercent === 'number' ? p.profitPercent : 50;
+      const pHours = typeof p.holdHours === 'number' ? p.holdHours : 12;
+      return `
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <img src="${p.image || '/images/products/iphone15.png'}" alt="${p.name}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;background:rgba(255,255,255,0.05);">
+              <div>
+                <span style="font-weight:600;display:block;">${p.name}</span>
+                <span style="font-size:11px;color:var(--text-muted);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;max-width:240px;">${p.description || 'No description'}</span>
+              </div>
+            </div>
+          </td>
+          <td><span class="chip chip-outline">${p.category}</span></td>
+          <td style="font-weight:700;color:var(--primary);">${formatMoney(p.price)}</td>
+          <td style="font-weight:700;color:var(--success);">+${pPercent}%</td>
+          <td style="font-weight:500;">${pHours} hrs</td>
+          <td><strong style="color:${p.stock > 0 ? 'var(--text-secondary)' : 'var(--danger)'};">${p.stock}</strong></td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-outline btn-sm" onclick="openEditModal('${p.id}')" style="padding:6px 12px;font-size:12px;">✏️ Edit</button>
+              <button class="btn btn-outline btn-sm" onclick="handleDeleteProduct('${p.id}')" style="padding:6px 12px;font-size:12px;color:var(--danger);border-color:rgba(239,68,68,0.2);">🗑️ Delete</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function openAddModal() {
+    document.getElementById('product-form').reset();
+    document.getElementById('product-id').value = '';
+    document.getElementById('modal-title').textContent = '➕ Add Product';
+    
+    // Set standard defaults
+    document.getElementById('p-stock').value = 50;
+    document.getElementById('p-profit').value = 50;
+    document.getElementById('p-hold').value = 12;
+    document.getElementById('p-image').value = '/images/products/';
+
+    document.getElementById('product-modal').classList.add('active');
+  }
+
+  function openEditModal(productId) {
+    const db = getDB();
+    const product = db.products.find(p => p.id === productId);
+    if (!product) return;
+
+    document.getElementById('product-id').value = product.id;
+    document.getElementById('p-name').value = product.name;
+    document.getElementById('p-category').value = product.category;
+    document.getElementById('p-price').value = product.price;
+    document.getElementById('p-stock').value = product.stock || 0;
+    document.getElementById('p-profit').value = typeof product.profitPercent === 'number' ? product.profitPercent : 50;
+    document.getElementById('p-hold').value = typeof product.holdHours === 'number' ? product.holdHours : 12;
+    document.getElementById('p-image').value = product.image;
+    document.getElementById('p-desc').value = product.description || '';
+
+    document.getElementById('modal-title').textContent = '✏️ Edit Product';
+    document.getElementById('product-modal').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('product-modal').classList.remove('active');
+  }
+
+  function handleSaveProduct(e) {
+    e.preventDefault();
+    const db = getDB();
+    
+    const id = document.getElementById('product-id').value;
+    const name = document.getElementById('p-name').value.trim();
+    const category = document.getElementById('p-category').value;
+    const price = parseFloat(document.getElementById('p-price').value);
+    const stock = parseInt(document.getElementById('p-stock').value, 10);
+    const profitPercent = parseInt(document.getElementById('p-profit').value, 10);
+    const holdHours = parseInt(document.getElementById('p-hold').value, 10);
+    const image = document.getElementById('p-image').value.trim();
+    const description = document.getElementById('p-desc').value.trim();
+
+    if (id) {
+      // Edit mode
+      const idx = db.products.findIndex(p => p.id === id);
+      if (idx !== -1) {
+        db.products[idx] = { id, name, category, price, stock, profitPercent, holdHours, image, description };
+      }
+    } else {
+      // Add mode
+      const newProduct = {
+        id: 'p_' + Math.random().toString(36).substr(2, 9),
+        name, category, price, stock, profitPercent, holdHours, image, description
+      };
+      db.products.push(newProduct);
+    }
+
+    saveDB(db);
+    showToast('💾 Product saved successfully!', 'success');
+    closeModal();
+    renderProductsList();
+  }
+
+  function handleDeleteProduct(productId) {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    const db = getDB();
+    db.products = db.products.filter(p => p.id !== productId);
+    saveDB(db);
+    showToast('🗑️ Product deleted successfully!', 'success');
+    renderProductsList();
+  }
+</script>
+</body>
+</html>

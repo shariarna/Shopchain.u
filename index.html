@@ -170,25 +170,29 @@
       return;
     }
 
-    grid.innerHTML = products.map(p => `
-      <div class="product-card fade-up" onclick="showBuyModal('${p.id}')">
-        <div class="product-img-wrap">
-          <img src="${p.image}" class="product-img" alt="${p.name}">
-        </div>
-        <div class="product-info">
-          <div class="product-category">${p.category}</div>
-          <div class="product-name">${p.name}</div>
-          <div class="product-return">📈 Sell for ${formatMoney(p.price * 1.5)} after 12 hrs</div>
-          <div class="product-price-row">
-            <div class="product-price">${formatMoney(p.price)}</div>
-            <div class="product-sell-price">+50% 🚀</div>
+    grid.innerHTML = products.map(p => {
+      const pPercent = typeof p.profitPercent === 'number' ? p.profitPercent : 50;
+      const pHours = typeof p.holdHours === 'number' ? p.holdHours : 12;
+      const sellPrice = p.price * (1 + pPercent / 100);
+      return `
+        <div class="product-card fade-up" onclick="showBuyModal('${p.id}')">
+          <div class="product-img-wrap">
+            <img src="${p.image}" class="product-img" alt="${p.name}">
           </div>
-          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showBuyModal('${p.id}')">
-            🛒 Buy Now
-          </button>
-        </div>
-      </div>
-    `).join('');
+          <div class="product-info">
+            <div class="product-category">${p.category}</div>
+            <div class="product-name">${p.name}</div>
+            <div class="product-return">📈 Sell for ${formatMoney(sellPrice)} after ${pHours} hrs</div>
+            <div class="product-price-row">
+              <div class="product-price">${formatMoney(p.price)}</div>
+              <div class="product-sell-price">+${pPercent}% 🚀</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showBuyModal('${p.id}')">
+              🛒 Buy Now
+            </button>
+          </div>
+        </div>`;
+    }).join('');
   }
 
   function filterByCategory(cat, btn) {
@@ -211,6 +215,10 @@
 
     document.getElementById('modal-product-title').textContent = product.name;
 
+    const pPercent = typeof product.profitPercent === 'number' ? product.profitPercent : 50;
+    const pHours = typeof product.holdHours === 'number' ? product.holdHours : 12;
+    const sellPrice = product.price * (1 + pPercent / 100);
+
     if (!user) {
       document.getElementById('modal-body').innerHTML = `
         <div style="text-align:center;padding:20px 0;">
@@ -220,7 +228,7 @@
           <div style="background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.3);border-radius:12px;padding:16px;margin-bottom:20px;">
             <div style="font-size:13px;color:var(--text-secondary);">Buy Price</div>
             <div style="font-size:28px;font-weight:800;color:var(--primary);">${formatMoney(product.price)}</div>
-            <div style="font-size:13px;color:var(--success);">↑ Sell Price: ${formatMoney(product.price * 1.5)}</div>
+            <div style="font-size:13px;color:var(--success);">↑ Sell Price: ${formatMoney(sellPrice)}</div>
           </div>
           <p style="font-size:14px;color:var(--text-secondary);margin-bottom:20px;">Please login to purchase this product</p>
           <a href="/login.html" class="btn btn-primary">🔑 Login Now</a>
@@ -238,8 +246,8 @@
               <div style="font-size:22px;font-weight:800;color:var(--primary);">${formatMoney(product.price)}</div>
             </div>
             <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:12px;">
-              <div style="font-size:12px;color:var(--text-secondary);">Sell Price (after 12 hrs)</div>
-              <div style="font-size:22px;font-weight:800;color:var(--success);">${formatMoney(product.price * 1.5)}</div>
+              <div style="font-size:12px;color:var(--text-secondary);">Sell Price (after ${pHours} hrs)</div>
+              <div style="font-size:22px;font-weight:800;color:var(--success);">${formatMoney(sellPrice)}</div>
             </div>
           </div>
           <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:12px;margin-bottom:20px;font-size:14px;">

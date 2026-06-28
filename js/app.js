@@ -30,18 +30,18 @@ const defaultDB = {
     }
   ],
   products: [
-    { id: 'p1', name: 'iPhone 15 Pro Max', category: 'Electronics', image: '/images/products/iphone15.png', price: 150, description: 'Latest Apple flagship smartphone with titanium design and A17 Pro chip.', stock: 50 },
-    { id: 'p2', name: 'Samsung 4K Smart TV', category: 'Electronics', image: '/images/products/samsungtv.png', price: 200, description: '65-inch 4K QLED Smart TV with HDR and built-in streaming apps.', stock: 30 },
-    { id: 'p3', name: 'Nike Air Max 270', category: 'Fashion', image: '/images/products/nike270.png', price: 80, description: 'Premium running shoes with Max Air cushioning for all-day comfort.', stock: 100 },
-    { id: 'p4', name: 'MacBook Pro M3', category: 'Electronics', image: '/images/products/macbook.png', price: 300, description: 'Powerful laptop with M3 chip, 16GB RAM and stunning Liquid Retina display.', stock: 20 },
-    { id: 'p5', name: 'Sony WH-1000XM5', category: 'Electronics', image: '/images/products/sonyheadphone.png', price: 60, description: 'Industry-leading noise cancelling headphones with 30-hour battery life.', stock: 75 },
-    { id: 'p6', name: 'Adidas Ultraboost', category: 'Fashion', image: '/images/products/adidasultra.png', price: 90, description: 'High-performance running shoes with Boost midsole technology.', stock: 80 },
-    { id: 'p7', name: 'Rolex Submariner', category: 'Watches', image: '/images/products/rolex.png', price: 500, description: 'Iconic luxury dive watch with ceramic bezel and Oystersteel bracelet.', stock: 10 },
-    { id: 'p8', name: 'PlayStation 5', category: 'Gaming', image: '/images/products/ps5.png', price: 120, description: 'Next-gen gaming console with ultra-high speed SSD and DualSense controller.', stock: 40 },
-    { id: 'p9', name: 'iPad Pro 12.9"', category: 'Electronics', image: '/images/products/ipad.png', price: 180, description: 'Powerful tablet with M2 chip, ProMotion display, and all-day battery.', stock: 35 },
-    { id: 'p10', name: 'Louis Vuitton Bag', category: 'Fashion', image: '/images/products/lvbag.png', price: 250, description: 'Iconic luxury handbag crafted from premium Monogram canvas.', stock: 15 },
-    { id: 'p11', name: 'DJI Mini 4 Pro', category: 'Electronics', image: '/images/products/djidrone.png', price: 100, description: 'Compact drone with 4K/60fps video, obstacle avoidance, and 34-min flight time.', stock: 25 },
-    { id: 'p12', name: 'Gaming Chair', category: 'Furniture', image: '/images/products/gamingchair.png', price: 70, description: 'Ergonomic gaming chair with lumbar support and 4D armrests.', stock: 60 },
+    { id: 'p1', name: 'iPhone 15 Pro Max', category: 'Electronics', image: '/images/products/iphone15.png', price: 150, description: 'Latest Apple flagship smartphone with titanium design and A17 Pro chip.', stock: 50, holdHours: 12, profitPercent: 50 },
+    { id: 'p2', name: 'Samsung 4K Smart TV', category: 'Electronics', image: '/images/products/samsungtv.png', price: 200, description: '65-inch 4K QLED Smart TV with HDR and built-in streaming apps.', stock: 30, holdHours: 12, profitPercent: 50 },
+    { id: 'p3', name: 'Nike Air Max 270', category: 'Fashion', image: '/images/products/nike270.png', price: 80, description: 'Premium running shoes with Max Air cushioning for all-day comfort.', stock: 100, holdHours: 12, profitPercent: 50 },
+    { id: 'p4', name: 'MacBook Pro M3', category: 'Electronics', image: '/images/products/macbook.png', price: 300, description: 'Powerful laptop with M3 chip, 16GB RAM and stunning Liquid Retina display.', stock: 20, holdHours: 12, profitPercent: 50 },
+    { id: 'p5', name: 'Sony WH-1000XM5', category: 'Electronics', image: '/images/products/sonyheadphone.png', price: 60, description: 'Industry-leading noise cancelling headphones with 30-hour battery life.', stock: 75, holdHours: 12, profitPercent: 50 },
+    { id: 'p6', name: 'Adidas Ultraboost', category: 'Fashion', image: '/images/products/adidasultra.png', price: 90, description: 'High-performance running shoes with Boost midsole technology.', stock: 80, holdHours: 12, profitPercent: 50 },
+    { id: 'p7', name: 'Rolex Submariner', category: 'Watches', image: '/images/products/rolex.png', price: 500, description: 'Iconic luxury dive watch with ceramic bezel and Oystersteel bracelet.', stock: 10, holdHours: 12, profitPercent: 50 },
+    { id: 'p8', name: 'PlayStation 5', category: 'Gaming', image: '/images/products/ps5.png', price: 120, description: 'Next-gen gaming console with ultra-high speed SSD and DualSense controller.', stock: 40, holdHours: 12, profitPercent: 50 },
+    { id: 'p9', name: 'iPad Pro 12.9"', category: 'Electronics', image: '/images/products/ipad.png', price: 180, description: 'Powerful tablet with M2 chip, ProMotion display, and all-day battery.', stock: 35, holdHours: 12, profitPercent: 50 },
+    { id: 'p10', name: 'Louis Vuitton Bag', category: 'Fashion', image: '/images/products/lvbag.png', price: 250, description: 'Iconic luxury handbag crafted from premium Monogram canvas.', stock: 15, holdHours: 12, profitPercent: 50 },
+    { id: 'p11', name: 'DJI Mini 4 Pro', category: 'Electronics', image: '/images/products/djidrone.png', price: 100, description: 'Compact drone with 4K/60fps video, obstacle avoidance, and 34-min flight time.', stock: 25, holdHours: 12, profitPercent: 50 },
+    { id: 'p12', name: 'Gaming Chair', category: 'Furniture', image: '/images/products/gamingchair.png', price: 70, description: 'Ergonomic gaming chair with lumbar support and 4D armrests.', stock: 60, holdHours: 12, profitPercent: 50 },
   ],
   deposits: [],
   purchases: [],
@@ -159,7 +159,7 @@ async function syncWithRemote() {
       
       const merged = {
         users: mergeArrays(local.users, remoteDB.users),
-        products: defaultDB.products, // keep images synced
+        products: remoteDB.products || local.products || defaultDB.products,
         deposits: mergeArrays(local.deposits, remoteDB.deposits),
         purchases: mergeArrays(local.purchases, remoteDB.purchases),
         withdrawals: mergeArrays(local.withdrawals, remoteDB.withdrawals),
@@ -226,7 +226,9 @@ function getDB() {
     return JSON.parse(JSON.stringify(defaultDB));
   }
   const db = JSON.parse(raw);
-  db.products = defaultDB.products; // always synchronize products list
+  if (!db.products || db.products.length === 0) {
+    db.products = defaultDB.products;
+  }
   if (db.purchases) {
     db.purchases.forEach(p => {
       if (!p.productImage && p.productEmoji) {
@@ -566,6 +568,11 @@ function buyProduct(userId, productId) {
   const existing = db.purchases.find(p => p.userId === userId && p.productId === productId && p.status === 'holding');
   if (existing) return { success: false, message: 'You are already holding this product!' };
 
+  // Check product-specific settings, fallback to global settings or defaults
+  const settings = db.siteSettings || {};
+  const holdHours = typeof product.holdHours === 'number' ? product.holdHours : (settings.holdHours || 12);
+  const profitPercent = typeof product.profitPercent === 'number' ? product.profitPercent : ((settings.profitMultiplier - 1) * 100 || 50);
+
   user.balance -= product.price;
   const purchase = {
     id: 'pur_' + Math.random().toString(36).substr(2, 9),
@@ -573,10 +580,10 @@ function buyProduct(userId, productId) {
     productName: product.name,
     productImage: product.image,
     buyPrice: product.price,
-    sellPrice: parseFloat((product.price * 1.5).toFixed(2)),
+    sellPrice: parseFloat((product.price * (1 + profitPercent / 100)).toFixed(2)),
     status: 'holding',
     boughtAt: Date.now(),
-    canSellAt: Date.now() + (12 * 60 * 60 * 1000)
+    canSellAt: Date.now() + (holdHours * 60 * 60 * 1000)
   };
   db.purchases.push(purchase);
   saveDB(db);
