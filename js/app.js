@@ -520,26 +520,37 @@ async function verifyBscTx(txHash, adminAddress, targetCrypto) {
   let amount = 0;
   let parsedTo = '';
 
-  if (targetCrypto === 'USDT_BEP20') {
-    // BEP-20 USDT transfer
-    const usdtContract = '0x55d398326f99059ff775485246999027b3197955';
+  const usdtContract = '0x55d398326f99059ff775485246999027b3197955';
+  const transferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+
+  // 1. Try to find the transfer in receipt logs (covers Binance/Exchange withdrawals, routers, & direct transfers)
+  let foundLog = null;
+  if (receipt && receipt.logs) {
+    foundLog = receipt.logs.find(log => 
+      log.address.toLowerCase() === usdtContract.toLowerCase() &&
+      log.topics && log.topics[0] === transferTopic &&
+      log.topics[2] && ('0x' + log.topics[2].substring(26).toLowerCase() === adminAddress.toLowerCase())
+    );
+  }
+
+  if (foundLog) {
+    parsedTo = adminAddress;
+    const rawAmount = BigInt(foundLog.data);
+    amount = Number(rawAmount) / 1e18;
+  } else if (targetCrypto === 'USDT_BEP20') {
+    // 2. Fallback: Parse direct transaction input if logs are not present/standard
     if (!tx.to || tx.to.toLowerCase() !== usdtContract.toLowerCase()) {
       throw new Error('This transaction is not a BEP-20 USDT token transfer.');
     }
     
     const input = tx.input;
-    // transfer method signature: 0xa9059cbb
     if (!input || !input.startsWith('0xa9059cbb')) {
       throw new Error('Not a valid BEP-20 USDT transfer transaction.');
     }
     
-    // Parse target address: chars 34 to 74 (40 chars)
     parsedTo = '0x' + input.substring(34, 74).toLowerCase();
-    
-    // Parse amount: chars 74 to end
     const amountHex = input.substring(74);
     const rawAmount = BigInt('0x' + amountHex);
-    // USDT has 18 decimals on BSC
     amount = Number(rawAmount) / 1e18;
   } else {
     throw new Error('Unsupported auto-verify cryptocurrency.');
