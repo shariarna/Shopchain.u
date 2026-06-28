@@ -46,6 +46,16 @@
 
       <!-- LEFT: Form -->
       <div>
+        <!-- Network Selector -->
+        <div class="glass-card" style="margin-bottom:20px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">🌐 Select Deposit Network</label>
+            <select id="deposit-network" class="form-control" onchange="changeNetwork()">
+              <!-- Options loaded dynamically -->
+            </select>
+          </div>
+        </div>
+
         <!-- Step 1: Send to Wallet -->
         <div class="glass-card" style="margin-bottom:20px;">
           <div style="font-size:16px;font-weight:700;margin-bottom:16px;">Step 1: Send USDT to This Address</div>
@@ -77,14 +87,14 @@
           </div>
 
           <div id="wallet-display">
-            <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">USDT BEP20 (Binance Smart Chain) Address:</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;" id="wallet-label">USDT BEP20 (Binance Smart Chain) Address:</div>
             <div class="wallet-box">
               <div class="wallet-addr" id="wallet-addr">Loading wallet address...</div>
               <button class="copy-btn" onclick="copyAddress()" id="copy-btn" style="display:none;">📋 Copy</button>
             </div>
           </div>
 
-          <div class="info-box warning" style="margin-top:12px;">
+          <div class="info-box warning" style="margin-top:12px;" id="wallet-warning">
             ⚠️ Only send **USDT on Binance Smart Chain (BSC / BEP-20)** to this address. Sending other coins or using networks like Tron (TRC20) or Ethereum (ERC20) will result in permanent loss!
           </div>
         </div>
@@ -108,7 +118,7 @@
               Minimum deposit: $10
             </div>
 
-            <div class="info-box info" style="margin-bottom:20px;">
+            <div class="info-box info" style="margin-bottom:20px;" id="network-note">
               ⚡ Once submitted, our system scans the Binance Smart Chain blockchain instantly. Successful transactions credit your balance immediately!
             </div>
             
@@ -165,6 +175,9 @@
   let adminAddress = '';
   let minDeposit = 10;
 
+  let wallets = {};
+  let activeNetwork = 'USDT_BEP20';
+
   window.onload = function () {
     currentUser = requireAuth();
     if (!currentUser) return;
@@ -177,21 +190,64 @@
   function loadWallets() {
     const db = getDB();
     const settings = db.siteSettings || {};
-    const wallets = settings.wallets || {};
+    wallets = settings.wallets || {};
     minDeposit = settings.minDeposit || 10;
     
     document.getElementById('min-deposit-hint').textContent = `Minimum deposit: $${minDeposit}`;
 
-    const usdtWallet = wallets.USDT_BEP20;
-    if (!usdtWallet || !usdtWallet.enabled || !usdtWallet.address) {
+    // Check if at least one wallet is enabled
+    const anyEnabled = Object.values(wallets).some(w => w.enabled && w.address);
+    if (!anyEnabled) {
       document.getElementById('no-wallets-msg').style.display = 'block';
       document.getElementById('deposit-content').style.display = 'none';
       return;
     }
 
-    adminAddress = usdtWallet.address;
-    document.getElementById('wallet-addr').textContent = adminAddress;
-    document.getElementById('copy-btn').style.display = 'inline-block';
+    // Set network dropdown options based on what is enabled
+    const select = document.getElementById('deposit-network');
+    select.innerHTML = '';
+    
+    if (wallets.USDT_BEP20 && wallets.USDT_BEP20.enabled && wallets.USDT_BEP20.address) {
+      const opt = document.createElement('option');
+      opt.value = 'USDT_BEP20';
+      opt.textContent = 'USDT (Binance Smart Chain - BEP20)';
+      select.appendChild(opt);
+    }
+    
+    if (wallets.USDT_TRC20 && wallets.USDT_TRC20.enabled && wallets.USDT_TRC20.address) {
+      const opt = document.createElement('option');
+      opt.value = 'USDT_TRC20';
+      opt.textContent = 'USDT (TRON - TRC20)';
+      select.appendChild(opt);
+    }
+
+    changeNetwork();
+  }
+
+  function changeNetwork() {
+    const select = document.getElementById('deposit-network');
+    if (!select || select.options.length === 0) return;
+    
+    activeNetwork = select.value;
+    const wallet = wallets[activeNetwork];
+    adminAddress = wallet ? wallet.address : '';
+
+    const label = document.getElementById('wallet-label');
+    const warning = document.getElementById('wallet-warning');
+    const noteBox = document.getElementById('network-note');
+    const qrDisplay = document.getElementById('qr-display');
+
+    document.getElementById('wallet-addr').textContent = adminAddress || 'Not configured';
+
+    if (activeNetwork === 'USDT_BEP20') {
+      label.textContent = 'USDT BEP20 (Binance Smart Chain) Address:';
+      warning.innerHTML = '⚠️ Only send **USDT on Binance Smart Chain (BSC / BEP-20)** to this address. Sending other coins or using networks like TRON (TRC20) or Ethereum (ERC20) will result in permanent loss!';
+      noteBox.innerHTML = '⚡ Once submitted, our system scans the Binance Smart Chain blockchain instantly. Successful transactions credit your balance immediately!';
+    } else {
+      label.textContent = 'USDT TRC20 (TRON Network) Address:';
+      warning.innerHTML = '⚠️ Only send **USDT on TRON Network (TRC-20)** to this address. Sending other coins or using networks like BSC (BEP20) or Ethereum (ERC20) will result in permanent loss!';
+      noteBox.innerHTML = '⚡ Once submitted, our system scans the TRON blockchain instantly. Confirmed transactions credit your balance immediately!';
+    }
   }
 
   function copyAddress() {
@@ -217,12 +273,19 @@
     }
 
     btn.disabled = true;
-    btn.innerHTML = '<span class="loading-spinner"></span> Verifying on Binance Smart Chain...';
+    btn.innerHTML = activeNetwork === 'USDT_BEP20' 
+      ? '<span class="loading-spinner"></span> Verifying on Binance Smart Chain...' 
+      : '<span class="loading-spinner"></span> Verifying on TRON Blockchain...';
 
     try {
-      // Automatic Verification on Binance Smart Chain via RPC
-      const txResult = await verifyBscTx(txid, adminAddress, 'USDT_BEP20');
-      const actualAmount = txResult.amount;
+      let actualAmount = 0;
+      if (activeNetwork === 'USDT_BEP20') {
+        const txResult = await verifyBscTx(txid, adminAddress, 'USDT_BEP20');
+        actualAmount = txResult.amount;
+      } else {
+        const txResult = await verifyTronTx(txid, adminAddress);
+        actualAmount = txResult.amount;
+      }
 
       if (actualAmount < minDeposit) {
         throw new Error(`Transaction amount ($${actualAmount.toFixed(2)}) is less than the minimum deposit limit ($${minDeposit}).`);
@@ -233,7 +296,7 @@
         id: 'dep_' + Math.random().toString(36).substr(2, 9),
         userId: currentUser.id,
         amount: actualAmount,
-        crypto: 'USDT_BEP20',
+        crypto: activeNetwork,
         txid: txid,
         status: 'approved',
         createdAt: Date.now(),
@@ -251,7 +314,8 @@
       }
       saveDB(dbSave);
 
-      showToast(`⚡ Transaction verified! ${formatMoney(actualAmount)} BEP20 USDT added to your balance instantly!`, 'success');
+      const netLabel = activeNetwork === 'USDT_BEP20' ? 'BEP20' : 'TRC20';
+      showToast(`⚡ Transaction verified! ${formatMoney(actualAmount)} ${netLabel} USDT added to your balance instantly!`, 'success');
       document.getElementById('deposit-form').reset();
       
       // Update UI state
@@ -283,19 +347,22 @@
       rejected: '<span class="badge badge-danger">❌ Rejected</span>',
     };
 
-    el.innerHTML = deposits.map(d => `
-      <div style="padding:14px 0;border-bottom:1px solid var(--border);">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-          <div>
-            <span class="badge badge-info" style="margin-right:6px;">USDT BEP20</span>
-            <strong style="color:var(--success);font-size:15px;">+${formatMoney(d.amount)}</strong>
+    el.innerHTML = deposits.map(d => {
+      const netLabel = d.crypto === 'USDT_BEP20' ? 'USDT BEP20' : 'USDT TRC20';
+      const badgeStyle = d.crypto === 'USDT_BEP20' ? 'badge-info' : 'badge-primary';
+      return `
+        <div style="padding:14px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div>
+              <span class="badge ${badgeStyle}" style="margin-right:6px;">${netLabel}</span>
+              <strong style="color:var(--success);font-size:15px;">+${formatMoney(d.amount)}</strong>
+            </div>
+            <div>${statusMap[d.status]}</div>
           </div>
-          <div>${statusMap[d.status]}</div>
-        </div>
-        <div style="font-size:11px;color:var(--text-muted);font-family:monospace;" title="${d.txid}">TxID: ${d.txid.substring(0, 28)}...</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${formatDate(d.createdAt)}</div>
-      </div>
-    `).join('');
+          <div style="font-size:11px;color:var(--text-muted);font-family:monospace;" title="${d.txid}">TxID: ${d.txid.substring(0, 28)}...</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${formatDate(d.createdAt)}</div>
+        </div>`;
+    }).join('');
   }
 </script>
 </body>

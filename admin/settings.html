@@ -99,6 +99,37 @@
         </div>
       </div>
 
+      <!-- USDT TRC20 -->
+      <div class="wallet-card usdt" style="margin-top:20px;">
+        <div class="wallet-header">
+          <div class="wallet-title">
+            <div class="wallet-icon" style="background:rgba(38,161,123,0.2);color:#26a17b;">₮</div>
+            <div>
+              <div>USDT (TRC-20) <span style="font-size:11px;background:var(--success);color:#000;padding:2px 6px;border-radius:4px;font-weight:800;margin-left:6px;">⚡ AUTO VERIFY</span></div>
+              <div style="font-size:12px;font-weight:400;color:var(--text-secondary);">TRON Network</div>
+            </div>
+          </div>
+          <div class="toggle-wrap">
+            <span>Enable</span>
+            <label class="toggle">
+              <input type="checkbox" id="usdt_trc20-enabled" checked onchange="updateSidebarWallets()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <label class="form-label">Your TRON (TRC-20) USDT Wallet Address</label>
+        <div class="input-row">
+          <input type="text" id="usdt_trc20-addr" class="form-control" placeholder="e.g. TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t" style="font-family:monospace;font-size:13px;" oninput="livePreview('usdt_trc20')">
+          <button class="btn btn-outline btn-sm" onclick="pasteClipboard('usdt_trc20-addr')">📋 Paste</button>
+        </div>
+        <div class="address-preview" id="usdt_trc20-preview">
+          <span style="color:var(--text-muted);">No address set yet</span>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:10px;">
+          <a id="usdt_trc20-explorer" href="#" target="_blank" style="font-size:12px;color:var(--info);text-decoration:none;display:none;">🔍 View on Tronscan</a>
+        </div>
+      </div>
+
       <button class="btn btn-primary" onclick="saveWallets()" style="font-size:16px;padding:14px 32px;">
         💾 Save Wallet Address
       </button>
@@ -190,6 +221,9 @@
     document.getElementById('usdt_bep20-addr').value = wallets.USDT_BEP20 ? wallets.USDT_BEP20.address : '';
     document.getElementById('usdt_bep20-enabled').checked = wallets.USDT_BEP20 ? wallets.USDT_BEP20.enabled : true;
 
+    document.getElementById('usdt_trc20-addr').value = wallets.USDT_TRC20 ? wallets.USDT_TRC20.address : '';
+    document.getElementById('usdt_trc20-enabled').checked = wallets.USDT_TRC20 ? wallets.USDT_TRC20.enabled : true;
+
     // Rules
     document.getElementById('min-deposit').value  = s.minDeposit   || 10;
     document.getElementById('min-withdraw').value = s.minWithdraw  || 10;
@@ -197,7 +231,7 @@
     document.getElementById('profit-mult').value  = s.profitMultiplier || 1.5;
 
     // Live previews
-    ['usdt_bep20'].forEach(livePreview);
+    ['usdt_bep20', 'usdt_trc20'].forEach(livePreview);
     updateSidebarWallets();
   }
 
@@ -221,17 +255,21 @@
     if (explorerLink) {
       explorerLink.style.display = 'inline';
       if (coin === 'usdt_bep20') explorerLink.href = `https://bscscan.com/address/${addr}`;
+      if (coin === 'usdt_trc20') explorerLink.href = `https://tronscan.org/#/address/${addr}`;
     }
   }
 
   function updateSidebarWallets() {
     const el = document.getElementById('side-wallets');
     const coins = [
-      { id: 'usdt_bep20', label: 'USDT BEP20', color: 'rgba(38,161,123,1)' }
+      { id: 'usdt_bep20', label: 'USDT BEP20', color: 'rgba(38,161,123,1)' },
+      { id: 'usdt_trc20', label: 'USDT TRC20', color: 'rgba(38,161,123,1)' }
     ];
     el.innerHTML = coins.map(c => {
-      const enabled = document.getElementById(c.id + '-enabled').checked;
-      const addr = document.getElementById(c.id + '-addr').value.trim();
+      const enabledEl = document.getElementById(c.id + '-enabled');
+      const addrEl = document.getElementById(c.id + '-addr');
+      const enabled = enabledEl ? enabledEl.checked : false;
+      const addr = addrEl ? addrEl.value.trim() : '';
       return `<div style="display:flex;justify-content:space-between;margin-bottom:6px;">
         <span>${c.label}</span>
         <span style="color:${enabled && addr ? 'var(--success)' : 'var(--danger)'};">${enabled && addr ? '✅' : '❌'}</span>
@@ -254,21 +292,18 @@
 
   function saveWallets() {
     const usdtBepAddr = document.getElementById('usdt_bep20-addr').value.trim();
-
-    if (!usdtBepAddr) {
-      showToast('⚠️ Please set the USDT BEP20 address!', 'warning');
-      return;
-    }
+    const usdtTrcAddr = document.getElementById('usdt_trc20-addr').value.trim();
 
     const db = getDB();
     if (!db.siteSettings) db.siteSettings = {};
     if (!db.siteSettings.wallets) db.siteSettings.wallets = {};
 
     db.siteSettings.wallets.USDT_BEP20 = { address: usdtBepAddr, network: 'BSC (BEP20)', enabled: document.getElementById('usdt_bep20-enabled').checked, autoVerify: true };
+    db.siteSettings.wallets.USDT_TRC20 = { address: usdtTrcAddr, network: 'TRON (TRC20)', enabled: document.getElementById('usdt_trc20-enabled').checked, autoVerify: true };
 
     saveDB(db);
     updateSidebarWallets();
-    showToast('✅ Wallet address saved!', 'success');
+    showToast('✅ Wallet addresses saved!', 'success');
   }
 
   function saveRules() {

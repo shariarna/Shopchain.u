@@ -53,9 +53,11 @@
                 <button type="button" onclick="setMaxAmount()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(249,115,22,0.15);border:1px solid rgba(249,115,22,0.3);border-radius:6px;padding:4px 10px;color:var(--primary);font-size:12px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;">MAX</button>
               </div>
             </div>
-
+            <div class="form-group">
+              <label class="form-label">🌐 Select Network</label>
               <select id="wtd-crypto" class="form-control">
-                <option value="USDT_BEP20">USDT (BSC BEP20)</option>
+                <option value="USDT_BEP20">USDT (BSC BEP-20)</option>
+                <option value="USDT_TRC20">USDT (TRON TRC-20)</option>
               </select>
             </div>
 
@@ -168,18 +170,20 @@
       rejected: '<span class="badge badge-danger">❌ Rejected</span>',
     };
 
-    el.innerHTML = withdrawals.map(w => `
-      <div style="padding:14px 0;border-bottom:1px solid var(--border);">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-          <div style="font-weight:700;color:var(--danger);">-${formatMoney(w.amount)}</div>
-          <div>${statusMap[w.status]}</div>
-        </div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">${w.crypto} → ${w.walletAddress.substring(0, 20)}...</div>
-        <div style="font-size:11px;color:var(--text-muted);">${formatDate(w.createdAt)}</div>
-        ${w.status === 'rejected' ? '<div class="info-box warning" style="margin-top:8px;padding:8px 12px;font-size:12px;">❌ Your withdrawal was rejected. Balance has been refunded to your account.</div>' : ''}
-        ${w.status === 'approved' ? '<div class="info-box success" style="margin-top:8px;padding:8px 12px;font-size:12px;">✅ Your withdrawal has been processed successfully.</div>' : ''}
-      </div>
-    `).join('');
+    el.innerHTML = withdrawals.map(w => {
+      const netLabel = w.crypto === 'USDT_BEP20' ? 'USDT BEP-20' : 'USDT TRC-20';
+      return `
+        <div style="padding:14px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div style="font-weight:700;color:var(--danger);">${formatMoney(w.amount)}</div>
+            <div>${statusMap[w.status]}</div>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">${netLabel} → ${w.walletAddress.substring(0, 20)}...</div>
+          <div style="font-size:11px;color:var(--text-muted);">${formatDate(w.createdAt)}</div>
+          ${w.status === 'rejected' ? '<div class="info-box warning" style="margin-top:8px;padding:8px 12px;font-size:12px;">❌ Your withdrawal was rejected. Balance has been refunded to your account.</div>' : ''}
+          ${w.status === 'approved' ? '<div class="info-box success" style="margin-top:8px;padding:8px 12px;font-size:12px;">✅ Your withdrawal has been processed successfully.</div>' : ''}
+        </div>`;
+    }).join('');
   }
 </script>
 </body>

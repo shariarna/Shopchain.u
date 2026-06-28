@@ -9,7 +9,8 @@ const DB_KEY = 'shopchain_db';
 const defaultSettings = {
   siteName: 'ShopChain',
   wallets: {
-    USDT_BEP20: { address: '', network: 'BSC (BEP20)', enabled: true, autoVerify: true }
+    USDT_BEP20: { address: '', network: 'BSC (BEP20)', enabled: true, autoVerify: true },
+    USDT_TRC20: { address: '', network: 'TRON (TRC20)', enabled: true, autoVerify: true }
   },
   minDeposit: 10,
   minWithdraw: 10,
@@ -241,6 +242,9 @@ function getDB() {
   if (!db.referralCodes) db.referralCodes = defaultDB.referralCodes;
   if (!db.siteSettings) db.siteSettings = JSON.parse(JSON.stringify(defaultSettings));
   if (!db.siteSettings.wallets) db.siteSettings.wallets = JSON.parse(JSON.stringify(defaultSettings.wallets));
+  if (!db.siteSettings.wallets.USDT_TRC20) {
+    db.siteSettings.wallets.USDT_TRC20 = { address: '', network: 'TRON (TRC20)', enabled: true, autoVerify: true };
+  }
   return db;
 }
 
@@ -554,6 +558,49 @@ async function verifyBscTx(txHash, adminAddress, targetCrypto) {
     amount,
     from: tx.from,
     to: parsedTo
+  };
+}
+
+// ---- Automated TRON Blockchain Verification (TRC20 USDT) ----
+async function verifyTronTx(txHash, adminAddress) {
+  txHash = txHash.trim();
+  adminAddress = adminAddress.trim();
+
+  if (!txHash) throw new Error('Transaction hash is required.');
+  if (!adminAddress) throw new Error('Admin TRON address is not configured.');
+
+  const url = `https://api.trongrid.io/v1/accounts/${adminAddress}/transactions/trc20?contract_address=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t&limit=25`;
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (!data || !data.success || !data.data) {
+    throw new Error('Could not query TRON network. Please try again.');
+  }
+
+  const tx = data.data.find(t => t.transaction_id.toLowerCase() === txHash.toLowerCase());
+  if (!tx) {
+    throw new Error('Transaction hash not found. Make sure you sent it to the correct address and the transaction is confirmed on TRON network.');
+  }
+
+  if (tx.to.toLowerCase() !== adminAddress.toLowerCase()) {
+    throw new Error('Transaction recipient does not match your admin deposit address.');
+  }
+
+  if (tx.token_info.symbol !== 'USDT' || tx.token_info.address !== 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t') {
+    throw new Error('Transaction token is not USDT TRC20.');
+  }
+
+  const decimals = tx.token_info.decimals || 6;
+  const amount = parseFloat(tx.value) / Math.pow(10, decimals);
+
+  if (amount <= 0) {
+    throw new Error('Transaction amount must be greater than 0.');
+  }
+
+  return {
+    amount,
+    from: tx.from,
+    to: tx.to
   };
 }
 
