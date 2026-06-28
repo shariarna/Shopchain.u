@@ -618,6 +618,9 @@ function buyProduct(userId, productId) {
   // Check product-specific settings, fallback to global settings or defaults
   const settings = db.siteSettings || {};
   const holdHours = typeof product.holdHours === 'number' ? product.holdHours : (settings.holdHours || 12);
+  const holdMinutes = typeof product.holdMinutes === 'number' ? product.holdMinutes : 0;
+  const holdSeconds = typeof product.holdSeconds === 'number' ? product.holdSeconds : 0;
+  const durationMs = (holdHours * 3600 + holdMinutes * 60 + holdSeconds) * 1000;
   const profitPercent = typeof product.profitPercent === 'number' ? product.profitPercent : ((settings.profitMultiplier - 1) * 100 || 50);
 
   user.balance -= product.price;
@@ -630,7 +633,7 @@ function buyProduct(userId, productId) {
     sellPrice: parseFloat((product.price * (1 + profitPercent / 100)).toFixed(2)),
     status: 'holding',
     boughtAt: Date.now(),
-    canSellAt: Date.now() + (holdHours * 60 * 60 * 1000)
+    canSellAt: Date.now() + durationMs
   };
   db.purchases.push(purchase);
   saveDB(db);
@@ -646,7 +649,13 @@ function sellProduct(purchaseId, userId) {
     const remaining = purchase.canSellAt - Date.now();
     const hrs = Math.floor(remaining / 3600000);
     const mins = Math.floor((remaining % 3600000) / 60000);
-    return { success: false, message: `Please wait ${hrs}h ${mins}m more before selling!` };
+    const secs = Math.floor((remaining % 60000) / 1000);
+    let remStr = '';
+    if (hrs > 0) remStr += `${hrs}h `;
+    if (mins > 0) remStr += `${mins}m `;
+    if (secs > 0) remStr += `${secs}s`;
+    if (!remStr) remStr = '0s';
+    return { success: false, message: `Please wait ${remStr.trim()} more before selling!` };
   }
   purchase.status = 'sold';
   purchase.soldAt = Date.now();
@@ -720,6 +729,18 @@ function showToast(message, type = 'info') {
 
 function formatMoney(amount) {
   return '$' + parseFloat(amount).toFixed(2);
+}
+
+function formatDuration(h, m, s) {
+  const pHours = typeof h === 'number' ? h : 0;
+  const pMins = typeof m === 'number' ? m : 0;
+  const pSecs = typeof s === 'number' ? s : 0;
+  let durationStr = '';
+  if (pHours > 0) durationStr += `${pHours}h `;
+  if (pMins > 0) durationStr += `${pMins}m `;
+  if (pSecs > 0) durationStr += `${pSecs}s`;
+  if (!durationStr) durationStr = '0s';
+  return durationStr.trim();
 }
 
 function formatDate(ts) {

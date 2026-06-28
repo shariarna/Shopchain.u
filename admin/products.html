@@ -103,14 +103,18 @@
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:12px;">
           <div class="form-group">
             <label class="form-label">📈 Profit (%)</label>
             <input type="number" id="p-profit" class="form-control" min="1" max="1000" placeholder="e.g. 50" required>
           </div>
           <div class="form-group">
-            <label class="form-label">⏳ Hold Time (Hours)</label>
-            <input type="number" id="p-hold" class="form-control" min="1" placeholder="e.g. 12" required>
+            <label class="form-label">⏳ Hold Time (HH:MM:SS)</label>
+            <div style="display:flex;gap:4px;">
+              <input type="number" id="p-hold-h" class="form-control" min="0" placeholder="H" style="padding:8px 4px;text-align:center;" title="Hours">
+              <input type="number" id="p-hold-m" class="form-control" min="0" max="59" placeholder="M" style="padding:8px 4px;text-align:center;" title="Minutes">
+              <input type="number" id="p-hold-s" class="form-control" min="0" max="59" placeholder="S" style="padding:8px 4px;text-align:center;" title="Seconds">
+            </div>
           </div>
         </div>
 
@@ -161,7 +165,7 @@
 
     tbody.innerHTML = db.products.map(p => {
       const pPercent = typeof p.profitPercent === 'number' ? p.profitPercent : 50;
-      const pHours = typeof p.holdHours === 'number' ? p.holdHours : 12;
+      const durationStr = formatDuration(p.holdHours, p.holdMinutes, p.holdSeconds);
       return `
         <tr>
           <td>
@@ -176,7 +180,7 @@
           <td><span class="chip chip-outline">${p.category}</span></td>
           <td style="font-weight:700;color:var(--primary);">${formatMoney(p.price)}</td>
           <td style="font-weight:700;color:var(--success);">+${pPercent}%</td>
-          <td style="font-weight:500;">${pHours} hrs</td>
+          <td style="font-weight:500;">${durationStr}</td>
           <td><strong style="color:${p.stock > 0 ? 'var(--text-secondary)' : 'var(--danger)'};">${p.stock}</strong></td>
           <td>
             <div style="display:flex;gap:6px;">
@@ -245,7 +249,9 @@
     // Set standard defaults
     document.getElementById('p-stock').value = 50;
     document.getElementById('p-profit').value = 50;
-    document.getElementById('p-hold').value = 12;
+    document.getElementById('p-hold-h').value = 12;
+    document.getElementById('p-hold-m').value = 0;
+    document.getElementById('p-hold-s').value = 0;
     document.getElementById('p-image').value = '/images/products/';
 
     // Reset image preview state
@@ -268,7 +274,9 @@
     document.getElementById('p-price').value = product.price;
     document.getElementById('p-stock').value = product.stock || 0;
     document.getElementById('p-profit').value = typeof product.profitPercent === 'number' ? product.profitPercent : 50;
-    document.getElementById('p-hold').value = typeof product.holdHours === 'number' ? product.holdHours : 12;
+    document.getElementById('p-hold-h').value = typeof product.holdHours === 'number' ? product.holdHours : 0;
+    document.getElementById('p-hold-m').value = typeof product.holdMinutes === 'number' ? product.holdMinutes : 0;
+    document.getElementById('p-hold-s').value = typeof product.holdSeconds === 'number' ? product.holdSeconds : 0;
     document.getElementById('p-image').value = product.image;
     document.getElementById('p-desc').value = product.description || '';
 
@@ -305,7 +313,9 @@
     const price = parseFloat(document.getElementById('p-price').value);
     const stock = parseInt(document.getElementById('p-stock').value, 10);
     const profitPercent = parseInt(document.getElementById('p-profit').value, 10);
-    const holdHours = parseInt(document.getElementById('p-hold').value, 10);
+    const holdHours = parseInt(document.getElementById('p-hold-h').value || 0, 10);
+    const holdMinutes = parseInt(document.getElementById('p-hold-m').value || 0, 10);
+    const holdSeconds = parseInt(document.getElementById('p-hold-s').value || 0, 10);
     const image = document.getElementById('p-image').value.trim();
     const description = document.getElementById('p-desc').value.trim();
 
@@ -313,13 +323,13 @@
       // Edit mode
       const idx = db.products.findIndex(p => p.id === id);
       if (idx !== -1) {
-        db.products[idx] = { id, name, category, price, stock, profitPercent, holdHours, image, description };
+        db.products[idx] = { id, name, category, price, stock, profitPercent, holdHours, holdMinutes, holdSeconds, image, description };
       }
     } else {
       // Add mode
       const newProduct = {
         id: 'p_' + Math.random().toString(36).substr(2, 9),
-        name, category, price, stock, profitPercent, holdHours, image, description
+        name, category, price, stock, profitPercent, holdHours, holdMinutes, holdSeconds, image, description
       };
       db.products.push(newProduct);
     }
