@@ -151,7 +151,7 @@ function mergeArrays(localArr, remoteArr) {
 }
 
 async function syncWithRemote() {
-  if (!REMOTE_DB_URL) return;
+  if (!REMOTE_DB_URL || isSaving) return;
   try {
     const res = await fetch(REMOTE_DB_URL + '?nocache=' + Date.now());
     const remoteDB = await res.json();
@@ -273,14 +273,24 @@ function getEnabledWallets() {
     .map(([key, w]) => ({ key, ...w }));
 }
 
+let isSaving = false;
+
 function saveDB(db) {
   localStorage.setItem(DB_KEY, JSON.stringify(db));
   if (REMOTE_DB_URL) {
+    isSaving = true;
     fetch(REMOTE_DB_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(db)
-    }).catch(err => console.error(err));
+    })
+    .then(() => {
+      isSaving = false;
+    })
+    .catch(err => {
+      console.error(err);
+      isSaving = false;
+    });
   }
 }
 
